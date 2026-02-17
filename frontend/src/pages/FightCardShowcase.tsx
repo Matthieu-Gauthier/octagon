@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronDown, Check, X, Target } from "lucide-react";
+import { ChevronDown, Check, X, Target, ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { MOCK_EVENTS } from "@/data/mock-data";
+import { Badge } from "@/components/ui/badge";
 
 /**
  * SHOWCASE — Dot Matrix Grid variants with fight results visible.
@@ -391,6 +393,143 @@ export function FightCardShowcase() {
                     <Variant3 />
                 </div>
             </section>
+
+            <div className="flex items-center justify-center pt-12 pb-4">
+                <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                <span className="px-4 text-zinc-500 font-mono text-xs uppercase tracking-widest">Navigation Concepts</span>
+                <div className="h-px bg-zinc-800 w-full max-w-xs" />
+            </div>
+
+            {/* NAV CONCEPT A: TIMELINE */}
+            <section className="space-y-4">
+                <h3 className="text-lg font-bold text-zinc-100">Concept A: Timeline</h3>
+                <p className="text-xs text-zinc-500">Une frise chronologique défilable. Idéal pour voir la progression.</p>
+                <div className="border border-dashed border-zinc-700 rounded-2xl p-6 overflow-x-auto">
+                    <div className="flex items-center gap-4 min-w-max">
+                        {MOCK_EVENTS.map((evt, i) => {
+                            const active = i === 1; // Simulate 2nd event active
+                            return (
+                                <div key={evt.id} className={cn(
+                                    "relative flex flex-col items-center gap-2 px-4 py-2 rounded-xl transition-all cursor-pointer border",
+                                    active
+                                        ? "bg-zinc-900 border-red-500/50 shadow-[0_0_20px_-5px_rgba(220,38,38,0.3)]"
+                                        : "bg-transparent border-transparent hover:bg-zinc-900/50 hover:border-zinc-800"
+                                )}>
+                                    <span className={cn(
+                                        "text-[10px] font-bold uppercase tracking-wider",
+                                        active ? "text-red-400" : "text-zinc-600"
+                                    )}>
+                                        {new Date(evt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                    </span>
+                                    <div className={cn(
+                                        "w-3 h-3 rounded-full border-2",
+                                        active ? "bg-red-500 border-red-500" : "bg-zinc-900 border-zinc-700"
+                                    )} />
+                                    <span className={cn(
+                                        "text-sm font-black uppercase whitespace-nowrap",
+                                        active ? "text-white" : "text-zinc-500"
+                                    )}>
+                                        {evt.name.split(':')[0]}
+                                    </span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="mt-4 h-0.5 w-full bg-zinc-900 relative">
+                        {/* Fake connect line */}
+                        <div className="absolute top-0 left-0 h-full w-full bg-gradient-to-r from-transparent via-zinc-800 to-transparent" />
+                    </div>
+                </div>
+            </section>
+
+            {/* NAV CONCEPT B: CARDS CAROUSEL */}
+            <section className="space-y-4">
+                <h3 className="text-lg font-bold text-zinc-100">Concept B: Mini Cards</h3>
+                <p className="text-xs text-zinc-500">Des cartes compactes. Plus d'infos (lieu, titre complet).</p>
+                <div className="border border-dashed border-zinc-700 rounded-2xl p-6 overflow-hidden">
+                    <div className="flex gap-3 overflow-x-auto pb-2">
+                        {MOCK_EVENTS.map((evt, i) => {
+                            const active = i === 1;
+                            return (
+                                <div key={evt.id} className={cn(
+                                    "shrink-0 w-48 p-3 rounded-xl border flex flex-col gap-1 cursor-pointer transition-all",
+                                    active
+                                        ? "bg-zinc-900 border-red-500/40 ring-1 ring-red-500/20"
+                                        : "bg-zinc-950/50 border-zinc-800 opacity-60 hover:opacity-100"
+                                )}>
+                                    <div className="flex justify-between items-start">
+                                        <Badge variant="outline" className={cn("text-[9px] h-4 px-1", active ? "border-red-500/30 text-red-400" : "border-zinc-700 text-zinc-500")}>
+                                            {new Date(evt.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </Badge>
+                                        {active && <div className="h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]" />}
+                                    </div>
+                                    <h4 className={cn("font-black text-sm uppercase leading-tight mt-1", active ? "text-white" : "text-zinc-400")}>
+                                        {evt.name.split(':')[0]}
+                                    </h4>
+                                    <p className="text-[10px] text-zinc-500 truncate">{evt.name.split(':')[1] || "Fight Night"}</p>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* NAV CONCEPT C: ENHANCED HERO */}
+            <section className="space-y-4">
+                <h3 className="text-lg font-bold text-zinc-100">Concept C: Enhanced Hero</h3>
+                <p className="text-xs text-zinc-500">Un bandeau large avec navigation "Précédent / Suivant" explicite.</p>
+                <div className="border border-dashed border-zinc-700 rounded-2xl p-6">
+                    {/* Fake Hero */}
+                    <div className="relative rounded-2xl bg-zinc-950 border border-zinc-800 overflow-hidden">
+                        {/* Background Image/Gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-900/50 to-zinc-950 z-0" />
+
+                        <div className="relative z-10 flex items-center justify-between p-4 sm:p-8">
+                            {/* Prev Button (Visible text) */}
+                            <button className="hidden sm:flex flex-col items-start gap-1 p-2 rounded-lg hover:bg-zinc-900/50 text-left group">
+                                <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                                    <ChevronLeft className="h-4 w-4" />
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">Previous</span>
+                                </div>
+                                <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">UFC 296</span>
+                            </button>
+
+                            {/* Mobile Prev */}
+                            <button className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+
+                            {/* Center Content */}
+                            <div className="text-center space-y-1">
+                                <Badge variant="outline" className="mb-2 bg-red-500/10 text-red-500 border-red-500/20">LIVE NOW</Badge>
+                                <h1 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase">
+                                    UFC 297
+                                </h1>
+                                <p className="text-zinc-400 font-medium text-sm sm:text-base">Strickland vs Du Plessis</p>
+                                <div className="flex items-center justify-center gap-2 text-xs text-zinc-500 mt-2">
+                                    <MapPin className="h-3 w-3" />
+                                    <span>Toronto, Canada</span>
+                                </div>
+                            </div>
+
+                            {/* Next Button */}
+                            <button className="hidden sm:flex flex-col items-end gap-1 p-2 rounded-lg hover:bg-zinc-900/50 text-right group">
+                                <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                                    <span className="text-[10px] uppercase font-bold tracking-wider">Next</span>
+                                    <ChevronRight className="h-4 w-4" />
+                                </div>
+                                <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">UFC 298</span>
+                            </button>
+
+                            {/* Mobile Next */}
+                            <button className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800">
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
         </div>
     );
 }

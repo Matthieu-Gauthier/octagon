@@ -4,7 +4,7 @@ import { MOCK_EVENTS, MOCK_USER_BETS, MockUserBet, Fight } from "@/data/mock-dat
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Copy, Trophy, ChevronLeft, ChevronRight, ChevronDown, Calendar, Target, Check, X } from "lucide-react";
+import { ArrowLeft, Copy, Trophy, ChevronRight, ChevronLeft, MapPin, Target, Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -186,49 +186,89 @@ export function LeagueDashboard() {
                 </div>
             </div>
 
-            {/* 🏟️ Event Hero Banner */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-zinc-900 via-zinc-950 to-zinc-900 border border-zinc-800 p-6">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 rounded-full blur-3xl" />
-                <div className="relative">
-                    <div className="flex items-center justify-between mb-4">
-                        <button
-                            onClick={() => setEventIdx(Math.max(0, eventIdx - 1))}
-                            disabled={eventIdx === 0}
-                            className="p-1.5 rounded-lg bg-zinc-800/50 disabled:opacity-30 cursor-pointer hover:bg-zinc-800 transition-colors"
-                        >
+            {/* 🏟️ Event Hero Banner (Enhanced) */}
+            <div className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-800 p-6 sm:p-10">
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-900/50 to-zinc-950 z-0" />
+
+                <div className="relative z-10 flex items-center justify-between">
+                    {/* Prev Button */}
+                    <button
+                        onClick={() => setEventIdx(Math.max(0, eventIdx - 1))}
+                        disabled={eventIdx === 0}
+                        className="hidden sm:flex flex-col items-start gap-1 p-2 rounded-lg hover:bg-zinc-900/50 disabled:opacity-30 disabled:hover:bg-transparent text-left group transition-colors"
+                    >
+                        <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
                             <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        {isFinished ? (
-                            <Badge className="bg-zinc-800 text-zinc-400 border-zinc-700 text-[10px]">
-                                ✅ COMPLETED
-                            </Badge>
-                        ) : (
-                            <Badge className="bg-green-600/20 text-green-400 border-green-600/30 text-[10px]">
-                                🟢 UPCOMING
-                            </Badge>
+                            <span className="text-[10px] uppercase font-bold tracking-wider">Previous</span>
+                        </div>
+                        {eventIdx > 0 && (
+                            <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
+                                {MOCK_EVENTS[eventIdx - 1].name.split(":")[0]}
+                            </span>
                         )}
-                        <button
-                            onClick={() => setEventIdx(Math.min(MOCK_EVENTS.length - 1, eventIdx + 1))}
-                            disabled={eventIdx === MOCK_EVENTS.length - 1}
-                            className="p-1.5 rounded-lg bg-zinc-800/50 disabled:opacity-30 cursor-pointer hover:bg-zinc-800 transition-colors"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                    <div className="text-center space-y-1">
-                        <h2 className="text-2xl font-black tracking-tight">{event.name.split(":")[0]}</h2>
-                        <p className="text-sm text-zinc-400 font-medium">{event.name.split(":")[1]?.trim()}</p>
-                        <div className="flex items-center justify-center gap-3 text-xs text-zinc-500 pt-1">
-                            <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {new Date(event.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                    </button>
+
+                    {/* Mobile Prev */}
+                    <button
+                        onClick={() => setEventIdx(Math.max(0, eventIdx - 1))}
+                        disabled={eventIdx === 0}
+                        className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800 disabled:opacity-30"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+
+                    {/* Center Content */}
+                    <div className="text-center space-y-2">
+                        {isFinished ? (
+                            <Badge variant="outline" className="mb-2 bg-zinc-800/50 text-zinc-500 border-zinc-700">COMPLETED</Badge>
+                        ) : (
+                            <Badge variant="outline" className="mb-2 bg-red-500/10 text-red-500 border-red-500/20">LIVE NOW</Badge>
+                        )}
+
+                        <h2 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase">
+                            {event.name.split(":")[0]}
+                        </h2>
+                        <p className="text-zinc-400 font-medium text-sm sm:text-base">
+                            {event.name.split(":")[1]?.trim()}
+                        </p>
+
+                        <div className="flex items-center justify-center gap-3 text-xs text-zinc-500 pt-2">
+                            <span className="font-semibold text-zinc-400">
+                                {new Date(event.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
                             </span>
                             <span>·</span>
-                            <span>{event.location}</span>
-                            <span>·</span>
-                            <span>{event.fights.length} fights</span>
+                            <div className="flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                <span>{event.location}</span>
+                            </div>
                         </div>
                     </div>
+
+                    {/* Next Button */}
+                    <button
+                        onClick={() => setEventIdx(Math.min(MOCK_EVENTS.length - 1, eventIdx + 1))}
+                        disabled={eventIdx === MOCK_EVENTS.length - 1}
+                        className="hidden sm:flex flex-col items-end gap-1 p-2 rounded-lg hover:bg-zinc-900/50 disabled:opacity-30 disabled:hover:bg-transparent text-right group transition-colors"
+                    >
+                        <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                            <span className="text-[10px] uppercase font-bold tracking-wider">Next</span>
+                            <ChevronRight className="h-4 w-4" />
+                        </div>
+                        {eventIdx < MOCK_EVENTS.length - 1 && (
+                            <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
+                                {MOCK_EVENTS[eventIdx + 1].name.split(":")[0]}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* Mobile Next */}
+                    <button
+                        onClick={() => setEventIdx(Math.min(MOCK_EVENTS.length - 1, eventIdx + 1))}
+                        disabled={eventIdx === MOCK_EVENTS.length - 1}
+                        className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800 disabled:opacity-30"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
                 </div>
             </div>
 
