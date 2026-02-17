@@ -201,13 +201,14 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
             {/* Fighters Area */}
             <div className={cn("grid grid-cols-2 relative transition-all", heightClass)}>
                 {/* Fighter A */}
+                {/* Fighter A */}
                 <FighterPortrait
                     fighter={fight.fighterA}
                     isWinner={winner === fight.fighterA.id}
                     isLoser={!!winner && winner !== fight.fighterA.id}
                     isSelected={winner === fight.fighterA.id}
                     layout="left"
-                    onClick={(e) => handleFighterClick(fight.fighterA.id, { ...e, target: { closest: () => null } } as any)}
+                    onClick={(e) => handleFighterClick(fight.fighterA.id, e)}
                     className={cn(
                         locked ? "cursor-default" : "cursor-pointer",
                         winner === fight.fighterA.id ? "bg-red-900/20" : (!locked && "hover:bg-zinc-900/10"),
@@ -251,7 +252,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     isLoser={!!winner && winner !== fight.fighterB.id}
                     isSelected={winner === fight.fighterB.id}
                     layout="right"
-                    onClick={(e) => handleFighterClick(fight.fighterB.id, { ...e, target: { closest: () => null } } as any)}
+                    onClick={(e) => handleFighterClick(fight.fighterB.id, e)}
                     className={cn(
                         locked ? "cursor-default" : "cursor-pointer",
                         winner === fight.fighterB.id ? "bg-blue-900/20" : (!locked && "hover:bg-zinc-900/10"),

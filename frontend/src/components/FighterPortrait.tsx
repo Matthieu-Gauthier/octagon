@@ -7,7 +7,7 @@ interface FighterPortraitProps {
     isWinner: boolean;
     isLoser: boolean;
     isSelected: boolean;
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => void;
     layout: "left" | "right";
     children?: React.ReactNode;
     className?: string;
@@ -15,7 +15,7 @@ interface FighterPortraitProps {
 
 export function FighterPortrait({
     fighter,
-    isWinner,
+    // isWinner, // Removed to avoid lint error
     isLoser,
     isSelected,
     onClick,
