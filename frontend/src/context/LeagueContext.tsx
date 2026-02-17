@@ -5,7 +5,7 @@ import { useAuth } from "./AuthContext";
 interface LeagueContextType {
     myLeagues: League[];
     getLeague: (id: string) => League | undefined;
-    createLeague: (name: string, survivorEnabled?: boolean) => Promise<string>;
+    createLeague: (name: string, survivorEnabled?: boolean, scoringSettings?: { winner: number; method: number; round: number; decision: number }) => Promise<string>;
     joinLeague: (code: string) => Promise<boolean>;
 }
 
@@ -21,7 +21,7 @@ export function LeagueProvider({ children }: { children: React.ReactNode }) {
 
     const getLeague = (id: string) => leagues.find(l => l.id === id);
 
-    const createLeague = async (name: string, survivorEnabled = false) => {
+    const createLeague = async (name: string, survivorEnabled = false, scoringSettings: { winner: number; method: number; round: number; decision: number } = { winner: 10, method: 5, round: 10, decision: 10 }) => {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
         const newLeague: League = {
@@ -31,6 +31,7 @@ export function LeagueProvider({ children }: { children: React.ReactNode }) {
             adminId: user?.id || "me",
             members: [user?.id || "me"],
             survivorEnabled,
+            scoringSettings,
         };
 
         setLeagues([...leagues, newLeague]);

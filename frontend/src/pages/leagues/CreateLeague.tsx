@@ -12,13 +12,25 @@ export function CreateLeague() {
     const navigate = useNavigate();
     const [name, setName] = useState("");
     const [survivorEnabled, setSurvivorEnabled] = useState(false);
+
+    // Scoring Settings
+    const [winnerPoints, setWinnerPoints] = useState(10);
+    const [methodPoints, setMethodPoints] = useState(5);
+    const [roundPoints, setRoundPoints] = useState(10);
+    const [decisionPoints, setDecisionPoints] = useState(10);
+
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const leagueId = await createLeague(name, survivorEnabled);
+            const leagueId = await createLeague(name, survivorEnabled, {
+                winner: winnerPoints,
+                method: methodPoints,
+                round: roundPoints,
+                decision: decisionPoints
+            });
             toast.success("League created!");
             navigate(`/leagues/${leagueId}`);
         } catch (error) {
@@ -59,6 +71,30 @@ export function CreateLeague() {
                                 <p className="text-xs text-muted-foreground">Players pick every fight winner. Wrong pick resets streak.</p>
                             </div>
                         </label>
+
+                        {/* Scoring Configuration */}
+                        <div className="space-y-3 pt-4 border-t border-zinc-800">
+                            <h3 className="text-sm font-bold uppercase text-zinc-500 tracking-wider">Scoring Rules</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="winnerPts" className="text-xs">Winner Points</Label>
+                                    <Input id="winnerPts" type="number" min="0" value={winnerPoints} onChange={(e) => setWinnerPoints(Number(e.target.value))} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="methodPts" className="text-xs">Method Bonus</Label>
+                                    <Input id="methodPts" type="number" min="0" value={methodPoints} onChange={(e) => setMethodPoints(Number(e.target.value))} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="roundPts" className="text-xs">Round Bonus</Label>
+                                    <Input id="roundPts" type="number" min="0" value={roundPoints} onChange={(e) => setRoundPoints(Number(e.target.value))} />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="decisionPts" className="text-xs">Decision Bonus</Label>
+                                    <Input id="decisionPts" type="number" min="0" value={decisionPoints} onChange={(e) => setDecisionPoints(Number(e.target.value))} />
+                                    <p className="text-[10px] text-zinc-500">Awarded for correct decision (replaces round bonus)</p>
+                                </div>
+                            </div>
+                        </div>
                         <Button type="submit" className="w-full" disabled={loading}>
                             {loading ? "Creating..." : "Create League"}
                         </Button>

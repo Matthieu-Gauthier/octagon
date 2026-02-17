@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useLeague } from "@/context/LeagueContext";
-import { MOCK_EVENTS, MOCK_USER_BETS, MockUserBet, Fight } from "@/data/mock-data";
+import { MOCK_EVENTS, MOCK_USER_BETS } from "@/data/mock-data";
+import { Fight, Bet, ScoringSettings } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,8 @@ function computeEventStandings(
     leagueId: string,
     memberIds: string[],
     fights: Fight[],
-    allBets: MockUserBet[]
+    allBets: Bet[],
+    scoringSettings: ScoringSettings
 ) {
     const finishedFights = fights.filter(f => f.status === "FINISHED" && f.result);
 
@@ -36,13 +38,16 @@ function computeEventStandings(
 
             if (bet.winnerId === fight.result.winnerId) {
                 correct++;
-                points += 10; // correct winner
+                points += scoringSettings.winner;
 
                 if (bet.method === fight.result.method) {
-                    points += 5; // correct method
+                    points += scoringSettings.method;
 
-                    if (bet.method !== "DECISION" && bet.round === fight.result.round) {
-                        points += 10; // correct round
+                    if (bet.method === "DECISION") {
+                        points += scoringSettings.decision;
+                        perfect++;
+                    } else if (bet.round === fight.result.round) {
+                        points += scoringSettings.round;
                         perfect++;
                     }
                 }
@@ -119,12 +124,15 @@ export function LeagueDashboard() {
         toast.success("Invite code copied!");
     };
 
+    const settings = league.scoringSettings || { winner: 10, method: 5, round: 10, decision: 10 };
+
     // Per-event standings
     const standings = computeEventStandings(
         league.id,
         league.members,
         event.fights,
-        MOCK_USER_BETS
+        MOCK_USER_BETS,
+        settings
     );
     const myStanding = standings.find(s => s.userId === "me");
     const myRank = standings.findIndex(s => s.userId === "me") + 1;
@@ -150,10 +158,11 @@ export function LeagueDashboard() {
             if (!bet || !fight.result) continue;
             if (bet.winnerId === fight.result.winnerId) {
                 correct++;
-                points += 10;
+                points += settings.winner;
                 if (bet.method === fight.result.method) {
-                    points += 5;
-                    if (bet.method !== "DECISION" && bet.round === fight.result.round) points += 10;
+                    points += settings.method;
+                    if (bet.method === "DECISION") points += settings.decision;
+                    else if (bet.round === fight.result.round) points += settings.round;
                 }
             }
         }
@@ -338,6 +347,9 @@ export function LeagueDashboard() {
                         {(() => {
                             // Compute localized pick stats for "me"
                             const completedFights = event.fights.filter(f => f.status === "FINISHED" && f.result);
+
+                            type PickStat = { points: number; winnerCorrect: boolean; isPerfect: boolean };
+
                             const myPicksData = completedFights.map(fight => {
                                 const bet = MOCK_USER_BETS.find(b => b.leagueId === league.id && b.fightId === fight.id && b.userId === "me");
                                 if (!bet || !fight.result) return null;
@@ -345,14 +357,22 @@ export function LeagueDashboard() {
                                 const winnerCorrect = bet.winnerId === fight.result.winnerId;
                                 const methodCorrect = winnerCorrect && bet.method === fight.result.method;
                                 const roundCorrect = methodCorrect && bet.method !== "DECISION" && bet.round === fight.result.round;
+                                const isDecisionPerfect = methodCorrect && bet.method === "DECISION";
 
                                 let points = 0;
-                                if (winnerCorrect) points += 10;
-                                if (methodCorrect) points += 5;
-                                if (roundCorrect) points += 10;
+                                if (winnerCorrect) {
+                                    points += settings.winner;
+                                    if (methodCorrect) {
+                                        points += settings.method;
+                                        if (isDecisionPerfect) points += settings.decision;
+                                        else if (roundCorrect) points += settings.round;
+                                    }
+                                }
 
-                                return { points, winnerCorrect };
-                            }).filter(Boolean) as any[];
+                                const isPerfect = isDecisionPerfect || roundCorrect;
+
+                                return { points, winnerCorrect, isPerfect };
+                            }).filter((item): item is PickStat => item !== null);
 
                             return (
                                 <>
@@ -360,8 +380,8 @@ export function LeagueDashboard() {
                                         {myPicksData.map((p, i) => (
                                             <div key={i} className={cn(
                                                 "w-2 h-2 rounded-full",
-                                                p.points >= 25 ? "bg-green-500" :
-                                                    p.points >= 10 ? "bg-yellow-500" :
+                                                p.isPerfect ? "bg-green-500" :
+                                                    p.points >= settings.winner ? "bg-yellow-500" :
                                                         p.winnerCorrect ? "bg-yellow-500/50" : "bg-red-500/50"
                                             )} />
                                         ))}
@@ -393,13 +413,19 @@ export function LeagueDashboard() {
                                 const winnerCorrect = bet.winnerId === fight.result.winnerId;
                                 const methodCorrect = winnerCorrect && bet.method === fight.result.method;
                                 const roundCorrect = methodCorrect && bet.method !== "DECISION" && bet.round === fight.result.round;
+                                const isDecisionPerfect = methodCorrect && bet.method === "DECISION";
 
                                 let points = 0;
-                                if (winnerCorrect) points += 10;
-                                if (methodCorrect) points += 5;
-                                if (roundCorrect) points += 10;
+                                if (winnerCorrect) {
+                                    points += settings.winner;
+                                    if (methodCorrect) {
+                                        points += settings.method;
+                                        if (isDecisionPerfect) points += settings.decision;
+                                        else if (roundCorrect) points += settings.round;
+                                    }
+                                }
 
-                                const isPerfect = points >= 25;
+                                const isPerfect = isDecisionPerfect || roundCorrect;
                                 const winnerName = fight.result.winnerId === fight.fighterA.id ? fight.fighterA.name : fight.fighterB.name;
                                 // Clear, non-abbreviated result text
                                 const resultText = `${winnerName} by ${fight.result.method}${fight.result.round ? ` (Round ${fight.result.round})` : ""}`;
@@ -412,7 +438,7 @@ export function LeagueDashboard() {
                                         <div className={cn(
                                             "w-2 h-2 rounded-full shrink-0",
                                             isPerfect ? "bg-green-500" :
-                                                points >= 10 ? "bg-yellow-500" :
+                                                points >= settings.winner ? "bg-yellow-500" :
                                                     winnerCorrect ? "bg-yellow-500/50" : "bg-red-500/50"
                                         )} />
                                         <span className="w-28 sm:w-32 text-zinc-300 truncate font-medium">

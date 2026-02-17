@@ -1,49 +1,8 @@
-export interface Fighter {
-    id: string;
-    name: string;
-    record: string;
-    imageUrl?: string;
-}
+import { Fight, UfcEvent, User, LeaderboardEntry, Bet } from "@/types";
 
-export interface Fight {
-    id: string;
-    fighterA: Fighter;
-    fighterB: Fighter;
-    division: string;
-    rounds: number;
-    isMainEvent: boolean;
-    isCoMainEvent?: boolean;
-    isMainCard: boolean;
-    status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
-    result?: {
-        winnerId: string;
-        method: 'KO/TKO' | 'SUBMISSION' | 'DECISION' | 'DRAW';
-        round?: number;
-        time?: string;
-    }
-}
-
-export interface UfcEvent {
-    id: string;
-    name: string;
-    date: string;
-    location: string;
-    fights: Fight[];
-}
-
-export interface User {
-    id: string;
-    username: string;
-    avatarUrl?: string;
-}
-
-export interface LeaderboardEntry {
-    userId: string;
-    user: User;
-    points: number;
-    betsPlaced: number;
-    perfectPicks: number;
-}
+// Re-export for compatibility if needed, using the 'Bet' type alias
+export type MockUserBet = Bet;
+export type { Fight, UfcEvent, User, LeaderboardEntry };
 
 // ============================================================================
 // REAL UFC EVENTS
@@ -260,14 +219,7 @@ export const MOCK_USERS: User[] = [
 // Key format: "leagueId:fightId"
 // ============================================================================
 
-export interface MockUserBet {
-    leagueId: string;
-    fightId: string;
-    userId: string;
-    winnerId: string;
-    method?: 'KO/TKO' | 'SUBMISSION' | 'DECISION';
-    round?: number;
-}
+
 
 export const MOCK_USER_BETS: MockUserBet[] = [
     // "me" picks for past event

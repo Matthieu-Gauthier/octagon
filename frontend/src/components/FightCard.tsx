@@ -1,18 +1,19 @@
-import { Fight } from "@/data/mock-data";
+import { Fight } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Flame, RotateCcw, Shield, Lock } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { Check, ChevronLeft, RotateCcw, Flame, Shield, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { FighterPortrait } from "./FighterPortrait";
 
 // ============================================================================
 // Types
 // ============================================================================
 type Method = 'KO/TKO' | 'SUBMISSION' | 'DECISION';
 
-const METHODS: { value: Method; label: string; icon: string }[] = [
-    { value: "KO/TKO", label: "KO / TKO", icon: "💥" },
-    { value: "SUBMISSION", label: "Submission", icon: "🔒" },
-    { value: "DECISION", label: "Decision", icon: "📋" },
+const METHODS: { value: Method; short: string; icon: string; label: string }[] = [
+    { value: "KO/TKO", short: "KO", icon: "💥", label: "KO / TKO" },
+    { value: "SUBMISSION", short: "SUB", icon: "🔒", label: "Submission" },
+    { value: "DECISION", short: "DEC", icon: "📋", label: "Decision" },
 ];
 
 export interface FightCardPick {
@@ -57,254 +58,283 @@ interface VegasFightCardProps {
 }
 
 // ============================================================================
-// Corner-color helpers
-// ============================================================================
-function cornerClasses(color: "red" | "blue") {
-    return {
-        selected: color === "red" ? "bg-red-900/40 ring-1 ring-red-500" : "bg-blue-900/40 ring-1 ring-blue-500",
-        textActive: color === "red" ? "text-red-400" : "text-blue-400",
-    };
-}
-
-// ============================================================================
-// Sub-components
-// ============================================================================
-function FightBanner({ fight }: { fight: Fight }) {
-    if (fight.isMainEvent) {
-        return (
-            <div className="bg-gradient-to-r from-zinc-950 via-red-950 to-zinc-950 text-center py-2 border-b border-red-500/30">
-                <div className="flex items-center justify-center gap-2">
-                    <Flame className="h-3.5 w-3.5 text-red-500" />
-                    <span className="text-[10px] font-bold tracking-[0.4em] uppercase text-red-400">Main Event</span>
-                    <Flame className="h-3.5 w-3.5 text-red-500" />
-                </div>
-            </div>
-        );
-    }
-    if (fight.isCoMainEvent) {
-        return (
-            <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 text-center py-2 border-b border-zinc-700">
-                <div className="flex items-center justify-center gap-2">
-                    <Shield className="h-3.5 w-3.5 text-zinc-400" />
-                    <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-zinc-400">Co-Main Event</span>
-                    <Shield className="h-3.5 w-3.5 text-zinc-400" />
-                </div>
-            </div>
-        );
-    }
-    return (
-        <div className="flex items-center justify-between px-4 py-1.5 bg-zinc-950 border-b border-zinc-800">
-            <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">{fight.isMainCard ? "Main Card" : "Prelim"}</span>
-        </div>
-    );
-}
-
-function RoundBadge({ rounds }: { rounds: number }) {
-    return (
-        <div className="flex flex-col items-center gap-0.5 bg-zinc-800 rounded-lg px-3 py-1.5">
-            <span className="text-lg font-black text-white">{rounds}</span>
-            <span className="text-[8px] text-zinc-500 uppercase tracking-widest font-bold">Rounds</span>
-        </div>
-    );
-}
-
-// ============================================================================
-// Main component
+// Main Component (Refactored to match ShowcaseCard)
 // ============================================================================
 export function VegasFightCard({ fight, mode = "full", value = null, onPickChange, locked = false }: VegasFightCardProps) {
-    // Internal state (used when uncontrolled or as local working state)
     const [winner, setWinner] = useState<string | null>(value?.winnerId ?? null);
     const [method, setMethod] = useState<Method | null>((value?.method as Method) ?? null);
     const [round, setRound] = useState<number | null>(value?.round ?? null);
-    const [expanded, setExpanded] = useState(false);
+    const [showDrawer, setShowDrawer] = useState(true);
 
-    // Sync from external value prop
+    // Sync from external value
     useEffect(() => {
         setWinner(value?.winnerId ?? null);
         setMethod((value?.method as Method) ?? null);
         setRound(value?.round ?? null);
     }, [value?.winnerId, value?.method, value?.round]);
 
-    // Notify parent of changes
-    const emitChange = useCallback((w: string | null, m: Method | null, r: number | null) => {
+    const isComplete = mode === "winner"
+        ? !!winner
+        : !!winner && !!method && (method === "DECISION" || !!round);
+
+    // Auto-close drawer 1s after pick is complete (only in full mode)
+    useEffect(() => {
+        if (mode === "full" && isComplete && !locked) {
+            const timer = setTimeout(() => setShowDrawer(false), 1000);
+            return () => clearTimeout(timer);
+        } else if (!isComplete) {
+            setShowDrawer(true);
+        }
+    }, [isComplete, method, round, mode, locked]);
+
+    const notifyChange = (w: string | null, m: Method | null, r: number | null) => {
         if (!onPickChange) return;
         if (!w) { onPickChange(null); return; }
         onPickChange({ winnerId: w, method: m ?? undefined, round: r ?? undefined });
-    }, [onPickChange]);
+    };
 
-    const pickWinner = (id: string) => {
+    const handleFighterClick = (id: string, e: React.MouseEvent) => {
         if (locked) return;
+        // Ignore clicks inside the selection drawer
+        if ((e.target as HTMLElement).closest('.selection-area')) return;
+
+        // Toggle off if clicking selected winner
         if (winner === id) {
-            // Re-click toggles panel
-            setExpanded(prev => !prev);
-            return;
-        }
-        setWinner(id);
-        setMethod(null);
-        setRound(null);
-        setExpanded(true);
-        if (mode === "winner") {
-            // In winner-only mode, emit immediately
-            emitChange(id, null, null);
+            setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
+            notifyChange(null, null, null);
+        } else {
+            setWinner(id); setMethod(null); setRound(null); setShowDrawer(true);
+            // If survivor mode (winner only), notify immediately
+            if (mode === "winner") {
+                notifyChange(id, null, null);
+            } else {
+                notifyChange(id, null, null); // Notify winner change, clear rest
+            }
         }
     };
 
     const pickMethod = (m: Method) => {
+        if (locked) return;
         const newMethod = method === m ? null : m;
-        const newRound = m === "DECISION" ? null : round;
+        const newRound = null;
         setMethod(newMethod);
         setRound(newRound);
-        if (newMethod) {
-            emitChange(winner, newMethod, newRound);
-        }
+        notifyChange(winner, newMethod, newRound);
     };
 
     const pickRound = (r: number) => {
+        if (locked) return;
         const newRound = round === r ? null : r;
         setRound(newRound);
-        emitChange(winner, method, newRound);
+        notifyChange(winner, method, newRound);
     };
 
-    const reset = () => {
-        setWinner(null);
-        setMethod(null);
-        setRound(null);
-        setExpanded(false);
-        emitChange(null, null, null);
+    const reset = (e?: React.MouseEvent) => {
+        if (locked) return;
+        e?.stopPropagation();
+        setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
+        notifyChange(null, null, null);
     };
 
-    // Summary helpers
     const getShortSummary = () => {
-        if (mode === "winner") return null; // No method/round in survivor mode
+        if (!winner) return null;
+        if (mode === "winner") return "WIN";
         if (!method) return null;
-        const parts: string[] = [method];
-        if (round) parts.push(`R${round}`);
-        return parts.join(" · ");
+        const methodText = method === "SUBMISSION" ? "Submission" : method === "DECISION" ? "Decision" : method;
+        if (method === "DECISION") return methodText;
+        return `${methodText} - Round ${round}`;
     };
 
-    // Step logic (only for full mode)
-    const step = !method ? 1 : (method !== "DECISION" && !round) ? 2 : 3;
-    const isComplete = mode === "winner" ? !!winner : (method !== null && (method === "DECISION" || round !== null));
+    // Determine card height and style based on event type
+    let heightClass = "h-[220px]"; // Default / Standard
+    let eventType: "main" | "comain" | "standard" = "standard";
 
-    const color = winner ? (winner === fight.fighterA.id ? "red" as const : "blue" as const) : "red" as const;
-    const cc = cornerClasses(color);
+    if (fight.isMainEvent) {
+        heightClass = "h-[400px]";
+        eventType = "main";
+    } else if (fight.isCoMainEvent) {
+        heightClass = "h-[300px]";
+        eventType = "comain";
+    }
 
-    // Auto-collapse 1s after pick is complete
-    useEffect(() => {
-        if (isComplete && expanded) {
-            const timer = setTimeout(() => setExpanded(false), 1000);
-            return () => clearTimeout(timer);
-        }
-    }, [isComplete, expanded, method, round, winner]);
+    const containerClass = cn(
+        "w-full rounded-2xl overflow-hidden border bg-zinc-950 shadow-2xl relative transition-all duration-500",
+        eventType === "main" ? "border-red-500/40" : eventType === "comain" ? "border-zinc-700" : "border-zinc-800"
+    );
 
     return (
-        <div className={cn(
-            "rounded-xl overflow-hidden border-2 transition-all",
-            fight.isMainEvent ? "border-red-500/40" : fight.isCoMainEvent ? "border-zinc-700" : "border-zinc-800"
-        )}>
-            <FightBanner fight={fight} />
-
-            <div className="bg-zinc-950 p-1">
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-                    {/* Fighter A */}
-                    <button onClick={() => pickWinner(fight.fighterA.id)} className={cn(
-                        "p-5 rounded-lg transition-all text-right",
-                        locked ? "cursor-default" : "cursor-pointer",
-                        winner === fight.fighterA.id ? "bg-red-900/40 ring-1 ring-red-500" : !locked && "hover:bg-zinc-900",
-                        winner === fight.fighterB.id && "opacity-30"
-                    )}>
-                        <h3 className="text-xl font-black text-white uppercase">{fight.fighterA.name}</h3>
-                        <p className="text-xs text-zinc-500 font-mono">{fight.fighterA.record}</p>
-
-                        {winner === fight.fighterA.id && getShortSummary() && !expanded && (
-                            <div className="mt-2 inline-flex items-center gap-1 bg-red-900/30 border border-red-500/20 rounded-full px-2.5 py-0.5">
-                                {locked && <Lock className="h-2.5 w-2.5 text-red-400" />}
-                                <span className="text-[10px] font-semibold text-red-400">{getShortSummary()}</span>
-                            </div>
-                        )}
-                    </button>
-
-                    <div className="flex flex-col items-center px-4 gap-2">
-                        <span className="text-4xl font-black italic text-zinc-600">VS</span>
-                        <Badge className="bg-zinc-800 text-zinc-400 text-[9px] border-0">{fight.division}</Badge>
-                        {mode === "full" && <RoundBadge rounds={fight.rounds} />}
+        <div className={containerClass}>
+            {/* EVENT HEADER */}
+            <div className="absolute top-0 inset-x-0 z-20 pointer-events-none">
+                {eventType === "main" && (
+                    <div className="bg-gradient-to-r from-zinc-950/95 via-red-950/90 to-zinc-950/95 py-1.5 border-b border-red-500/20 backdrop-blur-sm flex items-center justify-between px-3">
+                        <div className="flex items-center gap-1.5">
+                            <Flame className="h-3 w-3 text-red-500 fill-red-500/20" />
+                            <span className="text-[9px] font-black tracking-[0.2em] uppercase text-red-100 drop-shadow-sm">Main Event</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.division}</Badge>
+                            <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.rounds} RND</Badge>
+                        </div>
                     </div>
-
-                    {/* Fighter B */}
-                    <button onClick={() => pickWinner(fight.fighterB.id)} className={cn(
-                        "p-5 rounded-lg transition-all text-left",
-                        locked ? "cursor-default" : "cursor-pointer",
-                        winner === fight.fighterB.id ? "bg-blue-900/40 ring-1 ring-blue-500" : !locked && "hover:bg-zinc-900",
-                        winner === fight.fighterA.id && "opacity-30"
-                    )}>
-                        <h3 className="text-xl font-black text-white uppercase">{fight.fighterB.name}</h3>
-                        <p className="text-xs text-zinc-500 font-mono">{fight.fighterB.record}</p>
-
-                        {winner === fight.fighterB.id && getShortSummary() && !expanded && (
-                            <div className="mt-2 inline-flex items-center gap-1 bg-blue-900/30 border border-blue-500/20 rounded-full px-2.5 py-0.5">
-                                {locked && <Lock className="h-2.5 w-2.5 text-blue-400" />}
-                                <span className="text-[10px] font-semibold text-blue-400">{getShortSummary()}</span>
-                            </div>
-                        )}
-                    </button>
-                </div>
+                )}
+                {eventType === "comain" && (
+                    <div className="bg-gradient-to-r from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 py-1.5 border-b border-zinc-700/50 backdrop-blur-sm flex items-center justify-between px-3">
+                        <div className="flex items-center gap-1.5">
+                            <Shield className="h-3 w-3 text-zinc-400 fill-zinc-400/20" />
+                            <span className="text-[9px] font-black tracking-[0.2em] uppercase text-zinc-300 drop-shadow-sm">Co-Main Event</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.division}</Badge>
+                            <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.rounds} RND</Badge>
+                        </div>
+                    </div>
+                )}
+                {eventType === "standard" && (
+                    <div className="flex justify-between items-start p-3 bg-gradient-to-b from-zinc-950/80 to-transparent">
+                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.division}</Badge>
+                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.rounds} RND</Badge>
+                    </div>
+                )}
             </div>
 
-
-
-            {/* Method & Round panel — only in "full" mode */}
-            {mode === "full" && winner && expanded && (
-                <div className="bg-zinc-900 border-t border-zinc-800 p-4 space-y-4 animate-in fade-in slide-in-from-top-2">
-                    {/* Stepper */}
-                    <div className="flex items-center gap-3">
-                        <div className={cn("flex items-center gap-1.5", step >= 1 ? cc.textActive : "text-zinc-600")}>
-                            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", step >= 1 ? cc.selected : "border border-zinc-700")}>1</div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider">Method</span>
-                        </div>
-                        <div className="flex-1 h-px bg-zinc-800" />
-                        <div className={cn("flex items-center gap-1.5", step >= 2 ? cc.textActive : "text-zinc-600")}>
-                            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", step >= 2 ? cc.selected : "border border-zinc-700")}>2</div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider">Round</span>
-                        </div>
-                        <div className="flex-1 h-px bg-zinc-800" />
-                        <div className={cn("flex items-center gap-1.5", step >= 3 ? "text-green-400" : "text-zinc-600")}>
-                            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold", step >= 3 ? "bg-green-900/40 ring-1 ring-green-500" : "border border-zinc-700")}>✓</div>
-                            <span className="text-[10px] font-semibold uppercase tracking-wider">Done</span>
+            {/* Fighters Area */}
+            <div className={cn("grid grid-cols-2 relative transition-all", heightClass)}>
+                {/* Fighter A */}
+                <FighterPortrait
+                    fighter={fight.fighterA}
+                    isWinner={winner === fight.fighterA.id}
+                    isLoser={!!winner && winner !== fight.fighterA.id}
+                    isSelected={winner === fight.fighterA.id}
+                    layout="left"
+                    onClick={(e) => handleFighterClick(fight.fighterA.id, { ...e, target: { closest: () => null } } as any)}
+                    className={cn(
+                        locked ? "cursor-default" : "cursor-pointer",
+                        winner === fight.fighterA.id ? "bg-red-900/20" : (!locked && "hover:bg-zinc-900/10"),
+                        winner === fight.fighterB.id && "grayscale opacity-50",
+                        !winner && "grayscale"
+                    )}
+                >
+                    <div className="absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none">
+                        <div className="transition-transform duration-300 origin-bottom-left group-hover:scale-105 mb-1">
+                            {winner === fight.fighterA.id && (
+                                <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
+                            )}
+                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
+                                {fight.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
+                            </h3>
+                            <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.record}</p>
+                            {winner === fight.fighterA.id && isComplete && (
+                                <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
+                                    {locked ? <Lock className="w-2.5 h-2.5 text-red-400" /> : <Check className="w-2.5 h-2.5 text-red-400" />}
+                                    <span className="text-[9px] font-black text-red-200 uppercase tracking-wide">{getShortSummary()}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
+                </FighterPortrait>
 
-                    {step === 1 && (
-                        <div className="grid grid-cols-3 gap-2 animate-in fade-in">
-                            {METHODS.map(m => (
-                                <button key={m.value} onClick={() => pickMethod(m.value)} className="py-3 rounded-lg text-sm font-semibold transition-all border border-zinc-700 text-zinc-400 hover:bg-zinc-800 cursor-pointer flex flex-col items-center gap-1">
-                                    <span className="text-lg">{m.icon}</span>
-                                    {m.label}
-                                </button>
-                            ))}
-                        </div>
+                {/* VS Badge */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
+                    <div className={cn(
+                        "flex items-center justify-center w-8 h-8 rounded-full font-black italic text-xs transition-all shadow-2xl duration-500",
+                        winner ? "bg-zinc-900 text-zinc-600 scale-75 border border-zinc-700" : "bg-white text-black scale-100 border-2 border-zinc-950"
+                    )}>
+                        <span className="-ml-0.5 mt-0.5">VS</span>
+                    </div>
+                </div>
+
+                {/* Fighter B */}
+                <FighterPortrait
+                    fighter={fight.fighterB}
+                    isWinner={winner === fight.fighterB.id}
+                    isLoser={!!winner && winner !== fight.fighterB.id}
+                    isSelected={winner === fight.fighterB.id}
+                    layout="right"
+                    onClick={(e) => handleFighterClick(fight.fighterB.id, { ...e, target: { closest: () => null } } as any)}
+                    className={cn(
+                        locked ? "cursor-default" : "cursor-pointer",
+                        winner === fight.fighterB.id ? "bg-blue-900/20" : (!locked && "hover:bg-zinc-900/10"),
+                        winner === fight.fighterA.id && "grayscale opacity-50",
+                        !winner && "grayscale"
                     )}
+                >
+                    <div className="absolute bottom-0 right-0 w-full p-4 pb-4 text-right bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent flex flex-col justify-end h-full pointer-events-none">
+                        <div className="flex flex-col items-end transition-transform duration-300 origin-bottom-right group-hover:scale-105 mb-1">
+                            {winner === fight.fighterB.id && (
+                                <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
+                            )}
+                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
+                                {fight.fighterB.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
+                            </h3>
+                            <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.record}</p>
+                            {winner === fight.fighterB.id && isComplete && (
+                                <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
+                                    {locked ? <Lock className="w-2.5 h-2.5 text-blue-400" /> : <Check className="w-2.5 h-2.5 text-blue-400" />}
+                                    <span className="text-[9px] font-black text-blue-200 uppercase tracking-wide">{getShortSummary()}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </FighterPortrait>
+            </div>
 
-                    {step === 2 && (
-                        <div className="animate-in fade-in slide-in-from-right-2">
-                            <p className="text-xs text-zinc-400 mb-2">{method === "KO/TKO" ? "💥" : "🔒"} {method} — which round?</p>
-                            <div className="flex gap-2">
-                                {Array.from({ length: fight.rounds }).map((_, i) => (
-                                    <button key={i} onClick={() => pickRound(i + 1)} className="flex-1 py-3 rounded-lg text-sm font-bold transition-all border border-zinc-700 text-zinc-400 hover:bg-zinc-800 cursor-pointer">
-                                        R{i + 1}
+            {/* ============================================================== */}
+            {/* BOTTOM DRAWER SELECTION (Only enable in "full" mode)          */}
+            {/* ============================================================== */}
+            {!locked && mode === "full" && winner && showDrawer && (
+                <div className="selection-area absolute bottom-0 inset-x-0 z-40 animate-in slide-in-from-bottom-8 duration-300">
+                    {/* Backdrop gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pointer-events-none" />
+                    <div className="relative backdrop-blur-xl p-4 pt-6">
+                        {/* Handle */}
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-zinc-700" />
+
+                        {!isComplete ? (
+                            <div className="space-y-3">
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider text-center">
+                                    {!method ? "How does it end?" : `${METHODS.find(m => m.value === method)?.icon} ${method} — Which round?`}
+                                </p>
+                                {!method ? (
+                                    <div className="flex gap-2 justify-center">
+                                        {METHODS.map((m) => (
+                                            <button key={m.value} onClick={() => pickMethod(m.value)}
+                                                className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
+                                                <span className="text-base">{m.icon}</span>
+                                                <span className="text-[11px] font-bold uppercase tracking-wide">{m.short}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : method !== "DECISION" ? (
+                                    <div className="flex gap-2 justify-center">
+                                        {Array.from({ length: fight.rounds }).map((_, i) => (
+                                            <button key={i} onClick={() => pickRound(i + 1)}
+                                                className="w-12 h-12 rounded-full text-sm font-black bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
+                                                R{i + 1}
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : null}
+                                <div className="flex justify-center gap-4 pt-1">
+                                    {method && (
+                                        <button onClick={() => setMethod(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer">
+                                            <ChevronLeft className="h-3 w-3" /> Back
+                                        </button>
+                                    )}
+                                    <button onClick={(e) => reset(e)} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 cursor-pointer">
+                                        <RotateCcw className="h-3 w-3" /> Reset
                                     </button>
-                                ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="text-center py-2 animate-in fade-in">
-                            <p className={cn("font-bold text-sm", cc.textActive)}>✓ Pick confirmed</p>
-                        </div>
-                    )}
-
-                    <div className="flex justify-end">
-                        <button onClick={reset} className="text-[10px] text-zinc-600 hover:text-red-400 cursor-pointer flex items-center gap-1"><RotateCcw className="h-3 w-3" /> Reset</button>
+                        ) : (
+                            <div className="flex items-center justify-center gap-3 py-1">
+                                <div className="bg-green-500 rounded-full p-0.5"><Check className="h-3 w-3 text-black" /></div>
+                                <span className="text-sm font-black text-green-400 uppercase tracking-wider">{getShortSummary()}</span>
+                                <button onClick={(e) => reset(e)} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 ml-2 cursor-pointer">
+                                    <RotateCcw className="h-3 w-3" /> Change
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

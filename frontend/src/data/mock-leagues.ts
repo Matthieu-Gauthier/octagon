@@ -1,11 +1,6 @@
-export interface League {
-    id: string;
-    name: string;
-    code: string; // 6-character invite code
-    adminId: string;
-    members: string[]; // User IDs
-    survivorEnabled: boolean;
-}
+import { League } from "@/types";
+
+export type { League };
 
 export const MOCK_LEAGUES: League[] = [
     {
@@ -15,6 +10,7 @@ export const MOCK_LEAGUES: League[] = [
         adminId: "u1",
         members: ["u1", "u2", "me"],
         survivorEnabled: true,
+        scoringSettings: { winner: 10, method: 5, round: 10, decision: 10 }
     },
     {
         id: "l2",
@@ -23,5 +19,6 @@ export const MOCK_LEAGUES: League[] = [
         adminId: "u3",
         members: ["u3", "u4", "me"],
         survivorEnabled: false,
+        scoringSettings: { winner: 10, method: 5, round: 10, decision: 10 }
     }
 ];
