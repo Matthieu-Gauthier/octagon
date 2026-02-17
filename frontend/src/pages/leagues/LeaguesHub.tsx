@@ -36,22 +36,21 @@ export function LeaguesHub() {
                 </Link>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Join a League</CardTitle>
-                    <CardDescription>Enter the invite code shared by your friend.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex gap-2">
-                        <Input
-                            placeholder="Enter Code (e.g. FIGHT1)"
-                            value={joinCode}
-                            onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                        />
-                        <Button variant="secondary" onClick={handleJoin}>Join</Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="flex flex-col sm:flex-row items-center gap-4 bg-muted/30 p-4 rounded-lg border">
+                <div className="flex-1 text-center sm:text-left">
+                    <h3 className="font-semibold text-sm">Join a League</h3>
+                    <p className="text-xs text-muted-foreground">Got an invite code?</p>
+                </div>
+                <div className="flex gap-2 w-full max-w-sm">
+                    <Input
+                        className="h-9"
+                        placeholder="Enter Code..."
+                        value={joinCode}
+                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                    />
+                    <Button size="sm" onClick={handleJoin}>Join</Button>
+                </div>
+            </div>
 
             <div className="space-y-4">
                 <h2 className="text-xl font-bold">My Leagues</h2>
@@ -62,7 +61,7 @@ export function LeaguesHub() {
                         <p className="text-sm text-muted-foreground">Join one above or create your own!</p>
                     </div>
                 ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                         {myLeagues.map(league => (
                             <Link key={league.id} to={`/leagues/${league.id}`}>
                                 <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">

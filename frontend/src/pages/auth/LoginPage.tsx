@@ -28,7 +28,7 @@ export function LoginPage() {
             toast.error(error.message);
         } else {
             toast.success("Successfully logged in!");
-            navigate("/");
+            navigate("/leagues");
         }
         setLoading(false);
     };
