@@ -30,12 +30,13 @@ const betSchema = z.object({
 
 interface BettingFormProps {
     fight: Fight;
+    leagueId: string;
     onClose?: () => void;
 }
 
-export function BettingForm({ fight, onClose }: BettingFormProps) {
+export function BettingForm({ fight, leagueId, onClose }: BettingFormProps) {
     const { placeBet, getBet } = useBets();
-    const existingBet = getBet(fight.id);
+    const existingBet = getBet(leagueId, fight.id);
 
     const form = useForm<z.infer<typeof betSchema>>({
         resolver: zodResolver(betSchema),
@@ -52,6 +53,7 @@ export function BettingForm({ fight, onClose }: BettingFormProps) {
             winnerId: values.winnerId,
             method: values.method,
             round: values.round ? parseInt(values.round) : undefined,
+            leagueId: leagueId,
         });
         // Use sonner toast
         toast.success("Bet Placed!", {

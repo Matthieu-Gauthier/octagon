@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { useSurvivor } from "@/context/SurvivorContext";
 import { Link } from "react-router-dom";
-import { Flame, Trophy, CheckCircle, XCircle } from "lucide-react";
+import { Flame, Trophy, CheckCircle } from "lucide-react";
 import { MOCK_EVENTS } from "@/data/mock-data";
 import { SurvivorPick } from "@/data/mock-survivor";
 
