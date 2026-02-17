@@ -1,0 +1,46 @@
+# OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.log
+
+# Node (Global)
+node_modules/
+dist/
+build/
+coverage/
+.env
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# NestJS (Backend Specific)
+backend/dist/
+backend/node_modules/
+backend/coverage/
+backend/.env
+backend/.env.development.local
+backend/.env.test.local
+backend/.env.production.local
+backend/.env.local
+
+# Vite (Frontend Specific)
+frontend/dist/
+frontend/dist-ssr/
+frontend/node_modules/
+frontend/coverage/
+frontend/.env
+frontend/*.local
+
+# Testing
+/.nyc_output
