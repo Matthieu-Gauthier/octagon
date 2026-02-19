@@ -1,16 +1,16 @@
 # Octagon Constitution
 
 <!-- Sync Impact Report
-Version: 1.1.1
-Last Amended: 2026-02-18
+Version: 1.2.0
+Last Amended: 2026-02-19
 Changes:
-- Added "Observability" principle (Health Check) to Backend Architecture.
-- Bumped version to 1.1.1.
+- Added "Mandatory Unit Testing (Jest)" principle.
+- Bumped version to 1.2.0 (New Principle).
 -->
 
 ## Governance
 - **Ratified**: 2026-02-18
-- **Version**: 1.1.1
+- **Version**: 1.2.0
 - **Amendment Process**: Pull Request review by Repository Owner.
 
 ## Core Principles
@@ -27,18 +27,24 @@ Changes:
 - **Auth**: Supabase JWT validation via Passport Strategy.
 - **Observability**: Health check endpoint (`/health`) required for connectivity verification.
 
-### 3. Frontend Standards
+### 3. Mandatory Unit Testing (Jest)
+- **Framework**: Tests must be written using **Jest**.
+- **Requirement**: No story is considered complete without passing unit tests covering the new functionality.
+- **Verification**: All tests must pass before a story is marked as done.
+- **Scope**: Success paths, error cases, and edge cases.
+
+### 4. Frontend Standards
 - **Stack**: React (Vite) + TypeScript + Tailwind CSS.
 - **State**: Zustand for global state (Bets, Auth).
 - **UI**: Shadcn/Radix primitives, Lucide icons, Dark Mode default.
 - **Routing**: React Router DOM.
 
-### 4. Gameplay Mechanics
+### 5. Gameplay Mechanics
 - **Betting**: Vegas-style fight cards. Bets locked after fight start time.
 - **Survivor**: Streak-based (Wrong pick = reset, Draw/NC = safe). Optional per league.
 - **Scoring**: Configurable per league (Winner/Method/Round/Decision points).
 
-### 5. Iterative Workflow (Spec-Kit)
+### 6. Iterative Workflow (Spec-Kit)
 - **Spec-First**: Write/Update `specs/*.md` before implementation.
 - **Phased Delivery**: Follow `docs/BACKEND_IMPLEMENTATION.md` phases.
 - **Verification**: Verify each phase with E2E tests before moving to the next.

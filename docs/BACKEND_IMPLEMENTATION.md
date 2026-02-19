@@ -1,5 +1,10 @@
 # Backend Implementation Plan
 
+
+## Development Standards
+- **Testing**: All features must include **Jest** unit tests (Success/Error/Edge cases).
+- **Constitution**: Refer to `.specify/memory/constitution.md` for non-negotiable rules.
+
 ## Phase 1: Core Infrastructure (Planned)
 - [ ] **Project Initialization**: NestJS setup, Docker configuration (dev/prod).
 - [ ] **Database Setup**: PostgreSQL on Unraid (`192.168.0.200`), Prisma ORM initialization.
