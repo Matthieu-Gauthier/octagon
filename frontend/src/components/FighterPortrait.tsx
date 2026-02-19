@@ -59,17 +59,6 @@ export function FighterPortrait({
                 isLeft ? "right-4" : "left-4",
                 isSelected ? "opacity-100" : "opacity-0"
             )}>
-                {isSelected && (
-                    <div className="bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 mb-2">
-                        <Check className="w-4 h-4 text-white" />
-                    </div>
-                )}
-                <span className={cn(
-                    "text-2xl font-black uppercase tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50",
-                    isSelected && "scale-110"
-                )}>
-                    {isSelected ? "WIN" : "PICK"}
-                </span>
             </div>
         </div>
     );
