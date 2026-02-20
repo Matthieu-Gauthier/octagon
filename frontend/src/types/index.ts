@@ -6,7 +6,7 @@ export interface Fighter {
     id: string;
     name: string;
     record: string;
-    imageUrl?: string;
+    imagePath?: string;
 }
 
 // Keep Method for now as it is used in FightCard.tsx

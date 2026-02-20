@@ -1,4 +1,4 @@
-import { Controller, Get, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, UseGuards, Request } from '@nestjs/common';
 import { EventsService } from './events.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
 
@@ -16,5 +16,17 @@ export class EventsController {
     @UseGuards(SupabaseGuard)
     findOne(@Param('id') id: string) {
         return this.eventsService.findOne(id);
+    }
+
+    @Post('admin/fetch')
+    @UseGuards(SupabaseGuard) // Todo: Wrap in specific AdminGuard later (T022)
+    fetchNextEvent() {
+        return this.eventsService.fetchNextEvent();
+    }
+
+    @Delete('admin/:id')
+    @UseGuards(SupabaseGuard) // Todo: Wrap in specific AdminGuard later
+    removeEvent(@Param('id') id: string) {
+        return this.eventsService.removeEvent(id);
     }
 }

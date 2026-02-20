@@ -70,7 +70,19 @@ model Event {
 model Fighter {
   id        String   @id // slug like 'jon-jones'
   name      String
-  record    String
+  wins        Int?
+  losses      Int?
+  draws       Int?
+  noContests  Int?
+  winsByKo    Int?
+  winsBySub   Int?
+  winsByDec   Int?
+  height      String?
+  weight      String?
+  reach       String?
+  stance      String?
+  sigStrikesLandedPerMin Float?
+  takedownAvg Float?
   imagePath String?  // Local asset path
   
   fightsA   Fight[]  @relation("FighterA")
@@ -98,7 +110,7 @@ model Fight {
   round       Int?
   time        String?
 
-  event       Event    @relation(fields: [eventId], references: [id])
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
   fighterA    Fighter  @relation("FighterA", fields: [fighterAId], references: [id])
   fighterB    Fighter  @relation("FighterB", fields: [fighterBId], references: [id])
   
@@ -123,7 +135,7 @@ model Bet {
 
   league    League   @relation(fields: [leagueId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  fight     Fight    @relation(fields: [fightId], references: [id])
+  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, userId, fightId])
   @@map("bets")
@@ -143,7 +155,7 @@ model SurvivorPick {
 
   league    League   @relation(fields: [leagueId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  fight     Fight    @relation(fields: [fightId], references: [id])
+  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, userId, fightId])
   @@map("survivor_picks")

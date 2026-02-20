@@ -40,7 +40,7 @@ export function FighterPortrait({
         >
             {/* Image */}
             <img
-                src={fighter.imageUrl || "/fighter-silhouette.png"}
+                src={fighter.imagePath || "/fighter-silhouette.png"}
                 alt={fighter.name}
                 className={cn(
                     "absolute bottom-0 h-[90%] w-full object-contain object-bottom transition-transform duration-500",

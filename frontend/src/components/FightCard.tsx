@@ -226,7 +226,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
                                 {fight.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
                             </h3>
-                            <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.record}</p>
+                            <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.wins}-{fight.fighterA.losses}-{fight.fighterA.noContests}</p>
                             {winner === fight.fighterA.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     {locked ? <Lock className="w-2.5 h-2.5 text-red-400" /> : <Check className="w-2.5 h-2.5 text-red-400" />}
@@ -270,7 +270,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
                                 {fight.fighterB.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
                             </h3>
-                            <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.record}</p>
+                            <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.wins}-{fight.fighterB.losses}-{fight.fighterB.noContests}</p>
                             {winner === fight.fighterB.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     {locked ? <Lock className="w-2.5 h-2.5 text-blue-400" /> : <Check className="w-2.5 h-2.5 text-blue-400" />}
