@@ -1,6 +1,15 @@
+// SurvivorContext — temporairement désactivé (pas encore utilisé en production)
+// Ce contexte utilise encore des données mock (mock-survivor.ts) et devra être
+// branché sur l'API backend avant d'être réactivé.
+//
+// Pour réactiver :
+//   1. Importer SurvivorProvider dans main.tsx
+//   2. Brancher sur l'API /api/survivor/*
+//   3. Retirer ces commentaires
+
+/*
 import { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { SurvivorProfile, SurvivorPick, EventResult, MOCK_SURVIVOR_PICKS } from "@/data/mock-survivor";
-import { MOCK_EVENTS } from "@/data/mock-data";
 import { useAuth } from "./AuthContext";
 
 interface SurvivorContextType {
@@ -23,7 +32,6 @@ export function SurvivorProvider({ children }: { children: React.ReactNode }) {
         }
     }, [user]);
 
-    // Derive event result: PERFECT if all WON/DRAW/NC, FAILED if any LOST, PENDING otherwise
     const getEventResult = (eventId: string): EventResult => {
         const eventPicks = picks.filter(p => p.eventId === eventId);
         if (eventPicks.length === 0) return "PENDING";
@@ -32,20 +40,12 @@ export function SurvivorProvider({ children }: { children: React.ReactNode }) {
         return "PERFECT";
     };
 
-    // Calculate streaks from pick history
     const profile = useMemo<SurvivorProfile | null>(() => {
         if (!user) return null;
 
-        // Get unique event IDs in chronological order
         const eventIds = [...new Set(picks.map(p => p.eventId))];
-        const sortedEventIds = eventIds.sort((a, b) => {
-            const eventA = MOCK_EVENTS.find(e => e.id === a);
-            const eventB = MOCK_EVENTS.find(e => e.id === b);
-            if (!eventA || !eventB) return 0;
-            return new Date(eventA.date).getTime() - new Date(eventB.date).getTime();
-        });
+        const sortedEventIds = eventIds.sort((a: string, b: string) => a.localeCompare(b));
 
-        // Calculate streaks
         let currentStreak = 0;
         let bestStreak = 0;
         let tempStreak = 0;
@@ -56,9 +56,8 @@ export function SurvivorProvider({ children }: { children: React.ReactNode }) {
                 tempStreak++;
                 if (tempStreak > bestStreak) bestStreak = tempStreak;
             } else if (result === "FAILED") {
-                tempStreak = 0; // Reset streak
+                tempStreak = 0;
             }
-            // PENDING doesn't affect streak
         }
         currentStreak = tempStreak;
 
@@ -111,3 +110,6 @@ export function useSurvivor() {
     }
     return context;
 }
+*/
+
+export { }; // Garde le module valide pour TypeScript

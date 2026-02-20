@@ -1,6 +1,5 @@
 import { Fighter } from "@/types";
 import { cn } from "@/lib/utils";
-import { Check } from "lucide-react";
 
 interface FighterPortraitProps {
     fighter: Fighter;

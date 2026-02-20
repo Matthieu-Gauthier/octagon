@@ -5,10 +5,34 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
-        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-    env_file:
-      - ./frontend/.env
+        VITE_SUPABASE_URL: https://kemrnryzjrrokslhnvul.supabase.co
+        VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtlbXJucnl6anJyb2tzbGhudnVsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNTE2OTMsImV4cCI6MjA4NjkyNzY5M30.v_z17pzQQKppOugw2Cbv_OKD00ZtuMGuPHIzctu1-VA
+        VITE_API_URL: https://octagon-api.xgotgot.zapto.org/api/v1
     ports:
-      - "8080:80"
+      - "9999:80"
     restart: always
+
+  backend:
+    image: ${DOCKER_USERNAME:-xgotgot}/octagon-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./backend/prisma/migrations:/app/prisma/migrations:ro # Read-only
+    restart: always
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

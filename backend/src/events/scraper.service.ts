@@ -94,49 +94,58 @@ export class ScraperService {
             const fights: ScrapedFight[] = [];
             const fightersMap = new Map<string, ScrapedFighter>();
 
-            // Main card vs Prelims (simplified logic - looking at the fight blocks)
-            // UFC DOM uses nested elements. We grab all .c-listing-fight elements.
-            const fightElements = $ev('.c-listing-fight');
-            let isMainCard = true; // Assume main card first, or rely on headers
+            // The UFC DOM groups fights in sections by ID:
+            //   #main-card    → Main Card fights
+            //   #prelims-card → Prelim fights
+            //   #early-prelims-card → Early Prelims (skipped)
+            const sections: { selector: string; isMainCard: boolean; isPrelim: boolean }[] = [
+                { selector: '#main-card', isMainCard: true, isPrelim: false },
+                { selector: '#prelims-card', isMainCard: false, isPrelim: true },
+            ];
 
-            for (let i = 0; i < fightElements.length; i++) {
-                const el = fightElements[i];
-                const $f = $ev(el);
+            let globalIndex = 0; // tracks overall fight order for isMainEvent / isCoMainEvent
 
-                // Exclude early prelims if needed based on nearby headers
-                const weightClass = $f.find('.c-listing-fight__class-text').text().trim();
-                if (weightClass.toLowerCase().includes('early prelim')) {
-                    continue; // Skip early prelims
+            for (const section of sections) {
+                const fightElements = $ev(`${section.selector} .c-listing-fight`);
+
+                for (let i = 0; i < fightElements.length; i++) {
+                    const el = fightElements[i];
+                    const $f = $ev(el);
+
+                    const weightClass = $f.find('.c-listing-fight__class-text').text().trim();
+                    if (weightClass.toLowerCase().includes('early prelim')) continue;
+
+                    const fighterLinks = $f.find('.c-listing-fight__corner-name a');
+                    if (fighterLinks.length < 2) continue;
+
+                    const fA = $ev(fighterLinks[0]);
+                    const fB = $ev(fighterLinks[1]);
+
+                    const fASlug = fA.attr('href')?.split('/').pop() || '';
+                    const fBSlug = fB.attr('href')?.split('/').pop() || '';
+
+                    if (fASlug && !fightersMap.has(fASlug)) {
+                        fightersMap.set(fASlug, await this.scrapeFighter(fASlug));
+                    }
+                    if (fBSlug && !fightersMap.has(fBSlug)) {
+                        fightersMap.set(fBSlug, await this.scrapeFighter(fBSlug));
+                    }
+
+                    fights.push({
+                        id: `${fASlug}-vs-${fBSlug}`,
+                        fighterAId: fASlug,
+                        fighterBId: fBSlug,
+                        division: weightClass,
+                        rounds: weightClass.toLowerCase().includes('title') ? 5 : 3,
+                        isMainEvent: globalIndex === 0,
+                        isCoMainEvent: globalIndex === 1,
+                        isMainCard: section.isMainCard,
+                        isPrelim: section.isPrelim,
+                        status: 'SCHEDULED'
+                    });
+
+                    globalIndex++;
                 }
-
-                const fighterLinks = $f.find('.c-listing-fight__corner-name a');
-                if (fighterLinks.length < 2) continue;
-
-                const fA = $ev(fighterLinks[0]);
-                const fB = $ev(fighterLinks[1]);
-
-                const fASlug = fA.attr('href')?.split('/').pop() || '';
-                const fBSlug = fB.attr('href')?.split('/').pop() || '';
-
-                if (fASlug && !fightersMap.has(fASlug)) {
-                    fightersMap.set(fASlug, await this.scrapeFighter(fASlug));
-                }
-                if (fBSlug && !fightersMap.has(fBSlug)) {
-                    fightersMap.set(fBSlug, await this.scrapeFighter(fBSlug));
-                }
-
-                fights.push({
-                    id: `${fASlug}-vs-${fBSlug}`,
-                    fighterAId: fASlug,
-                    fighterBId: fBSlug,
-                    division: weightClass,
-                    rounds: weightClass.toLowerCase().includes('title') ? 5 : 3,
-                    isMainEvent: i === 0,
-                    isCoMainEvent: i === 1,
-                    isMainCard: i < 5, // Approximation, accurate relies on DOM parsing headers
-                    isPrelim: i >= 5,
-                    status: 'SCHEDULED'
-                });
             }
 
             return {
@@ -156,38 +165,88 @@ export class ScraperService {
         const html = await this.fetchHtml(url);
         const $ = cheerio.load(html);
 
-        const name = $('.hero-profile__name').text().trim() || slug.replace('-', ' ');
-        const recordStr = $('.hero-profile__division-body').text().trim(); // "28-1-0 (W-L-D)"
-        const records = recordStr.match(/(\d+)/g) || ['0', '0', '0'];
+        // Name
+        const name = $('h1.c-hero__headline').text().trim() || slug.replace(/-/g, ' ');
 
-        const extractStat = (label: string): string => {
-            return $(`.c-stat-compare__label:contains("${label}")`).next('.c-stat-compare__number').text().trim();
+        // Record: "28-6-0 (W-L-D)" or "28-6-0, 1 NC"
+        const recordStr = $('.c-hero__headline-number').text().trim();
+        const recordMatch = recordStr.match(/(\d+)-(\d+)-(\d+)/);
+        const wins = recordMatch ? parseInt(recordMatch[1]) : 0;
+        const losses = recordMatch ? parseInt(recordMatch[2]) : 0;
+        const draws = recordMatch ? parseInt(recordMatch[3]) : 0;
+        // NC is sometimes appended: "28-6-0, 1 NC"
+        const ncMatch = recordStr.match(/(\d+)\s*NC/i);
+        const noContests = ncMatch ? parseInt(ncMatch[1]) : 0;
+
+        // Bio stats: each item has a .c-bio__label and a .c-bio__text
+        const getBioStat = (labelText: string): string | null => {
+            let result: string | null = null;
+            $('.c-bio__info-item').each((_, el) => {
+                const label = $(el).find('.c-bio__label').text().trim().toLowerCase();
+                if (label.includes(labelText.toLowerCase())) {
+                    result = $(el).find('.c-bio__text').text().trim() || null;
+                    return false; // break
+                }
+            });
+            return result;
         };
 
+        const height = getBioStat('Height') ?? getBioStat('Taille');
+        const weight = getBioStat('Weight') ?? getBioStat('Poids');
+        const reach = getBioStat('Reach') ?? getBioStat('Portée');
+        const stance = getBioStat('Stance') ?? getBioStat('Position');
+
+        // Sig. Strikes Landed per min & Takedown Avg
+        // These live in .c-stat-compare blocks — first number in each
+        const sigStrikesLandedPerMin = parseFloat(
+            $('.c-stat-compare').first().find('.c-stat-compare__number').first().text().trim()
+        ) || null;
+        const takedownAvg = parseFloat(
+            $('.c-stat-compare').eq(1).find('.c-stat-compare__number').first().text().trim()
+        ) || null;
+
+        // Wins by method: .c-stat-area__list-item contains label + value
+        const getWinMethod = (labelText: string): number => {
+            let result = 0;
+            $('.c-stat-area__list-item').each((_, el) => {
+                const label = $(el).find('.c-stat-area__list-label').text().trim().toLowerCase();
+                if (label.includes(labelText.toLowerCase())) {
+                    result = parseInt($(el).find('.c-stat-area__list-text').text().trim()) || 0;
+                    return false; // break
+                }
+            });
+            return result;
+        };
+
+        const winsByKo = getWinMethod('KO') || getWinMethod('knockout');
+        const winsBySub = getWinMethod('Sub') || getWinMethod('soumission');
+        const winsByDec = getWinMethod('Dec');
+
+        // Image
         const imageSrc =
+            $('img.c-hero__image').attr('src') ||
             $('.hero-profile__image img').attr('src') ||
-            $('img.hero-profile__image').attr('src') ||
             null;
 
-        this.logger.log(`Scraping fighter image: ${imageSrc}`);
+        this.logger.log(`Scraped fighter ${name}: ${wins}-${losses}-${draws}`);
 
         return {
             id: slug,
             name,
-            wins: parseInt(records[0]) || 0,
-            losses: parseInt(records[1]) || 0,
-            draws: parseInt(records[2]) || 0,
-            noContests: 0, // Fallback, sometimes not listed explicitly in the primary record string
-            winsByKo: 0, // Need deeper scraping logic for methods, fallback to 0 for MVP
-            winsBySub: 0,
-            winsByDec: 0,
-            height: extractStat('Height') || null,
-            weight: extractStat('Weight') || null,
-            reach: extractStat('Reach') || null,
-            stance: extractStat('Stance') || null,
-            sigStrikesLandedPerMin: parseFloat($('.c-stat-3bar__value').first().text().trim()) || null,
-            takedownAvg: parseFloat($('.c-stat-3bar__value').eq(1).text().trim()) || null,
-            imagePath: imageSrc ?? ''
+            wins,
+            losses,
+            draws,
+            noContests,
+            winsByKo,
+            winsBySub,
+            winsByDec,
+            height,
+            weight,
+            reach,
+            stance,
+            sigStrikesLandedPerMin,
+            takedownAvg,
+            imagePath: imageSrc ?? '',
         };
     }
 
@@ -224,7 +283,7 @@ export class ScraperService {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Language': 'en-US,en;q=1.0',
                 'Accept-Encoding': 'gzip, deflate, br',
                 'Connection': 'keep-alive',
                 'Upgrade-Insecure-Requests': '1',
@@ -232,7 +291,8 @@ export class ScraperService {
                 'Sec-Fetch-Mode': 'navigate',
                 'Sec-Fetch-Site': 'none',
                 'Sec-Fetch-User': '?1',
-                'Cache-Control': 'max-age=0'
+                'Cache-Control': 'max-age=0',
+                'Cookie': 'preferredLanguage=en; language=en-US; ufc_locale=en',
             }
         });
         if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);

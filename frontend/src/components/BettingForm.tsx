@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useBets } from "@/store/useBets";
-import { Fight } from "@/data/mock-data";
+import { Fight } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import {
     Form,
@@ -91,7 +91,9 @@ export function BettingForm({ fight, leagueId, onClose }: BettingFormProps) {
                                             className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full cursor-pointer text-center"
                                         >
                                             <span className="font-bold text-lg">{fight.fighterA.name}</span>
-                                            <span className="text-xs text-muted-foreground">{fight.fighterA.record}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {fight.fighterA.wins != null ? `${fight.fighterA.wins}-${fight.fighterA.losses}-${fight.fighterA.noContests ?? 0}` : ""}
+                                            </span>
                                         </FormLabel>
                                     </FormItem>
                                     <FormItem className="flex items-center space-x-3 space-y-0">
@@ -103,7 +105,9 @@ export function BettingForm({ fight, leagueId, onClose }: BettingFormProps) {
                                             className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary w-full cursor-pointer text-center"
                                         >
                                             <span className="font-bold text-lg">{fight.fighterB.name}</span>
-                                            <span className="text-xs text-muted-foreground">{fight.fighterB.record}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {fight.fighterB.wins != null ? `${fight.fighterB.wins}-${fight.fighterB.losses}-${fight.fighterB.noContests ?? 0}` : ""}
+                                            </span>
                                         </FormLabel>
                                     </FormItem>
                                 </RadioGroup>

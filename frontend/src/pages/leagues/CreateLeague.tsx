@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label";
 import { useCreateLeague } from "@/hooks/useLeagues"; // Updated import
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 export function CreateLeague() {
     // const { createLeague } = useLeague(); // Deprecated

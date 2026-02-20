@@ -1,7 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSurvivor } from "@/context/SurvivorContext";
 import { Button } from "@/components/ui/button";
 import { VegasFightCard } from "@/components/FightCard";
 import { toast } from "sonner";
@@ -10,7 +9,9 @@ import { useState, useEffect } from "react";
 export function SurvivorPick() {
     const { eventId } = useParams();
     const navigate = useNavigate();
-    const { makePick, getPicksForEvent } = useSurvivor();
+    // SurvivorContext temporairement désactivé — stubs locaux
+    const makePick = (_eventId: string, _fightId: string, _fighterId: string) => { };
+    const getPicksForEvent = (_eventId: string): { fightId: string; fighterId: string }[] => [];
 
     // Fetch Data
     const { data: event, isLoading, error } = useEvent(eventId || "");

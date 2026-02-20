@@ -35,7 +35,7 @@ export function useCreateLeague() {
             const { data } = await api.post<League>("/leagues", payload);
             return data;
         },
-        onSuccess: (data) => {
+        onSuccess: (_data) => {
             toast.success("League created successfully!");
             queryClient.invalidateQueries({ queryKey: ["leagues"] });
             // Optionally update cache directly if needed

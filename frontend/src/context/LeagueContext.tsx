@@ -1,10 +1,14 @@
 import { createContext, useContext, useState } from "react";
-import { League, MOCK_LEAGUES } from "@/data/mock-leagues";
+import { MOCK_LEAGUES } from "@/data/mock-leagues";
+import type { League } from "@/types";
 import { useAuth } from "./AuthContext";
 
+// Members stored as string[] in mock context
+type MockLeague = Omit<League, 'members'> & { members: string[] };
+
 interface LeagueContextType {
-    myLeagues: League[];
-    getLeague: (id: string) => League | undefined;
+    myLeagues: MockLeague[];
+    getLeague: (id: string) => MockLeague | undefined;
     createLeague: (name: string, survivorEnabled?: boolean, scoringSettings?: { winner: number; method: number; round: number; decision: number }) => Promise<string>;
     joinLeague: (code: string) => Promise<boolean>;
 }
@@ -13,7 +17,7 @@ const LeagueContext = createContext<LeagueContextType | undefined>(undefined);
 
 export function LeagueProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [leagues, setLeagues] = useState<League[]>(MOCK_LEAGUES);
+    const [leagues, setLeagues] = useState<MockLeague[]>(MOCK_LEAGUES as MockLeague[]);
 
     const myLeagues = leagues.filter(l =>
         l.members.includes("me") || (user && l.members.includes(user.id))
@@ -24,11 +28,12 @@ export function LeagueProvider({ children }: { children: React.ReactNode }) {
     const createLeague = async (name: string, survivorEnabled = false, scoringSettings: { winner: number; method: number; round: number; decision: number } = { winner: 10, method: 5, round: 10, decision: 10 }) => {
         const code = Math.random().toString(36).substring(2, 8).toUpperCase();
 
-        const newLeague: League = {
+        const newLeague: MockLeague = {
             id: `l-${Date.now()}`,
             name,
             code,
             adminId: user?.id || "me",
+            isArchived: false,
             members: [user?.id || "me"],
             survivorEnabled,
             scoringSettings,

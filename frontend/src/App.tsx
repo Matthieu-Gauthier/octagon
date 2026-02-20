@@ -13,7 +13,6 @@ import { AdminEvents } from "@/pages/admin/AdminEvents";
 import { LeaguesHub } from "@/pages/leagues/LeaguesHub";
 import { CreateLeague } from "@/pages/leagues/CreateLeague";
 import { LeagueDashboard } from "@/pages/leagues/LeagueDashboard";
-import { SurvivorProvider } from "@/context/SurvivorContext";
 import { SurvivorPick } from "@/pages/survivor/SurvivorPick";
 import { FightCardShowcase } from "@/pages/FightCardShowcase";
 
@@ -94,10 +93,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <SurvivorProvider>
-          <AppContent />
-          <Toaster position="top-center" richColors />
-        </SurvivorProvider>
+        <AppContent />
+        <Toaster position="top-center" richColors />
       </AuthProvider>
     </Router>
   );
