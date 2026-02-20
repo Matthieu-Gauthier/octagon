@@ -1,0 +1,24 @@
+### Admin: Update Fight Result
+PATCH {{baseUrl}}/fights/:id/result
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+    "winnerId": "fighter_id_uuid",
+    "method": "KO_TKO",
+    "round": 1,
+    "status": "FINISHED"
+}
+
+### Response
+HTTP/1.1 200 OK
+Content-Type: application/json
+
+{
+    "id": "fight_id_uuid",
+    "winnerId": "fighter_id_uuid",
+    "method": "KO_TKO",
+    "round": 1,
+    "status": "FINISHED",
+    "updatedAt": "2026-02-19T14:30:00Z"
+}

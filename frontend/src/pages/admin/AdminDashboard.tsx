@@ -1,9 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MOCK_EVENTS } from "@/data/mock-data";
+import { useEvents } from "@/hooks/useEvents";
+import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
 
 export function AdminDashboard() {
-    const upcomingEvents = MOCK_EVENTS.filter(e => new Date(e.date) > new Date()).length;
-    const totalFights = MOCK_EVENTS.reduce((acc, e) => acc + e.fights.length, 0);
+    const { data: events, isLoading, error } = useEvents();
+
+    if (isLoading) return <EventSkeleton />;
+    if (error) return <div className="text-red-500">Failed to load dashboard data.</div>;
+
+    const safeEvents = events || [];
+    const upcomingEvents = safeEvents.filter(e => new Date(e.date) > new Date()).length;
+    const totalFights = safeEvents.reduce((acc, e) => acc + (e.fights?.length || 0), 0);
 
     return (
         <div className="space-y-6">
@@ -18,7 +25,7 @@ export function AdminDashboard() {
                         <CardTitle className="text-sm font-medium">Total Events</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{MOCK_EVENTS.length}</div>
+                        <div className="text-2xl font-bold">{safeEvents.length}</div>
                         <p className="text-xs text-muted-foreground">
                             {upcomingEvents} upcoming
                         </p>
@@ -40,9 +47,9 @@ export function AdminDashboard() {
                         <CardTitle className="text-sm font-medium">Active Users</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">12</div>
+                        <div className="text-2xl font-bold">-</div>
                         <p className="text-xs text-muted-foreground">
-                            +2 active now
+                            User stats not yet available
                         </p>
                     </CardContent>
                 </Card>

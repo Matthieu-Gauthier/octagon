@@ -19,11 +19,14 @@ export class BetsService {
         });
         if (!fight) throw new NotFoundException('Fight not found');
 
-        // 2. Validate Time
-        // Strict cutoff based on Event Date
+        // 2. Validate Time & Status
+        // Strict cutoff based on Event Date OR Fight Status
         const now = new Date();
         if (now >= fight.event.date) {
             throw new BadRequestException('Betting is closed for this event');
+        }
+        if (fight.status === 'FINISHED') {
+            throw new BadRequestException('Betting is closed for this fight');
         }
 
         // 3. Upsert Bet
@@ -55,5 +58,26 @@ export class BetsService {
         return this.prisma.bet.findMany({
             where: { userId, leagueId },
         });
+    }
+
+    async findLeagueBets(leagueId: string, userId: string) {
+        return this.prisma.bet.findMany({ where: { leagueId, userId } });
+    }
+
+    async remove(betId: string, userId: string) {
+        // Ensure bet exists and belongs to user
+        const bet = await this.prisma.bet.findUnique({
+            where: { id: betId },
+            include: { fight: true } // Include fight to check status
+        });
+        if (!bet) throw new NotFoundException('Bet not found');
+        if (bet.userId !== userId) throw new BadRequestException('You can only remove your own bets');
+
+        // Check if fight is finished
+        if (bet.fight.status === 'FINISHED') {
+            throw new BadRequestException('Cannot remove bet for finished fight');
+        }
+
+        return this.prisma.bet.delete({ where: { id: betId } });
     }
 }
