@@ -18,6 +18,8 @@ model User {
   leaguesOwned League[]
   bets         Bet[]
   survivorPicks SurvivorPick[]
+
+  @@map("users")
 }
 
 model League {
@@ -35,6 +37,8 @@ model League {
   survivorPicks   SurvivorPick[]
   
   scoringSettings Json     @default("{\"winner\": 10, \"method\": 5, \"round\": 5}") 
+
+  @@map("leagues")
 }
 
 model LeagueMember {
@@ -48,6 +52,7 @@ model LeagueMember {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([leagueId, userId])
+  @@map("league_members")
 }
 
 model Event {
@@ -58,6 +63,8 @@ model Event {
   status    String   // SCHEDULED, LIVE, FINISHED
   
   fights    Fight[]
+
+  @@map("events")
 }
 
 model Fighter {
@@ -68,6 +75,8 @@ model Fighter {
   
   fightsA   Fight[]  @relation("FighterA")
   fightsB   Fight[]  @relation("FighterB")
+
+  @@map("fighters")
 }
 
 model Fight {
@@ -80,6 +89,7 @@ model Fight {
   isMainEvent Boolean  @default(false)
   isCoMainEvent Boolean @default(false)
   isMainCard  Boolean  @default(true)
+  isPrelim    Boolean  @default(false)
   status      String   @default("SCHEDULED") // SCHEDULED, LIVE, FINISHED
   
   // Result
@@ -94,6 +104,8 @@ model Fight {
   
   bets        Bet[]
   survivorPicks SurvivorPick[]
+
+  @@map("fights")
 }
 
 model Bet {
@@ -114,6 +126,7 @@ model Bet {
   fight     Fight    @relation(fields: [fightId], references: [id])
 
   @@unique([leagueId, userId, fightId])
+  @@map("bets")
 }
 
 model SurvivorPick {
@@ -133,4 +146,5 @@ model SurvivorPick {
   fight     Fight    @relation(fields: [fightId], references: [id])
 
   @@unique([leagueId, userId, fightId])
+  @@map("survivor_picks")
 }

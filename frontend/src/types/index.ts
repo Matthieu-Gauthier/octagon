@@ -9,11 +9,14 @@ export interface Fighter {
     imageUrl?: string;
 }
 
-export interface FightResult {
-    winnerId: string;
-    method: Method;
-    round?: number;
-    time?: string;
+// Keep Method for now as it is used in FightCard.tsx
+// But api.ts uses string for method. We might want to keep the union type in frontend for safety.
+
+export interface Fighter {
+    id: string;
+    name: string;
+    record: string;
+    imageUrl?: string;
 }
 
 export interface Fight {
@@ -26,8 +29,12 @@ export interface Fight {
     isCoMainEvent?: boolean;
     isMainCard: boolean;
     status: FightStatus;
-    result?: FightResult;
+    winnerId?: string;
+    method?: string; // Changed to string to match api.ts, or keep Method if we cast it
+    round?: number;
+    time?: string; // Optional, specific to frontend display? api.ts doesn't have it.
 }
+
 
 export interface UfcEvent {
     id: string;
@@ -69,10 +76,11 @@ export interface League {
 }
 
 export interface Bet {
+    id?: string; // Optional for compatibility with mocks
     leagueId: string;
     fightId: string;
     userId: string;
     winnerId: string;
-    method?: Method;
+    method?: Method; // Keep Method union type for frontend
     round?: number;
 }

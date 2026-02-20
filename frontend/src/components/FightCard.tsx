@@ -45,11 +45,11 @@ export interface ResultBreakdown {
 
 interface VegasFightCardProps {
     fight: Fight;
-    /** "full" = winner + method + round (betting).  "winner" = winner only (survivor). Default: "full" */
+    /** "full" = betting, "winner" = survivor. Default: "full" */
     mode?: "full" | "winner";
     /** Current pick value (controlled component). */
     value?: FightCardPick | null;
-    /** Called whenever the pick changes. */
+    /** Called whenever the pick changes (betting mode). */
     onPickChange?: (pick: FightCardPick | null) => void;
     /** If true, the card is read-only (past event). */
     locked?: boolean;
@@ -77,6 +77,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
         ? !!winner
         : !!winner && !!method && (method === "DECISION" || !!round);
 
+    // Auto-close drawer 1s after pick is complete (only in full/admin mode)
     // Auto-close drawer 1s after pick is complete (only in full mode)
     useEffect(() => {
         if (mode === "full" && isComplete && !locked) {
@@ -88,9 +89,10 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     }, [isComplete, method, round, mode, locked]);
 
     const notifyChange = (w: string | null, m: Method | null, r: number | null) => {
-        if (!onPickChange) return;
-        if (!w) { onPickChange(null); return; }
-        onPickChange({ winnerId: w, method: m ?? undefined, round: r ?? undefined });
+        const payload = w ? { winnerId: w, method: m ?? undefined, round: r ?? undefined } : null;
+        if (onPickChange) {
+            onPickChange(payload);
+        }
     };
 
     const handleFighterClick = (id: string, e: React.MouseEvent) => {

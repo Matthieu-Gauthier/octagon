@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { AdminLayout } from "@/layouts/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { AdminResults } from "@/pages/admin/AdminResults";
 import { AdminEvents } from "@/pages/admin/AdminEvents";
-import { LeagueProvider } from "@/context/LeagueContext";
 import { LeaguesHub } from "@/pages/leagues/LeaguesHub";
 import { CreateLeague } from "@/pages/leagues/CreateLeague";
 import { LeagueDashboard } from "@/pages/leagues/LeagueDashboard";
@@ -65,45 +64,26 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="container py-6 md:py-10 max-w-4xl mx-auto px-4 animate-in fade-in duration-500">
+      <main className="container py-6 md:py-10 mx-auto px-4 animate-in fade-in duration-500">
         <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          {/* Constrained width routes */}
+          <Route element={<div className="max-w-4xl mx-auto w-full"><Outlet /></div>}>
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/" element={<Navigate to="/leagues" replace />} />
+            <Route path="/leagues" element={<ProtectedRoute><LeaguesHub /></ProtectedRoute>} />
+            <Route path="/leagues/create" element={<ProtectedRoute><CreateLeague /></ProtectedRoute>} />
+            <Route path="/leagues/:leagueId" element={<ProtectedRoute><LeagueDashboard /></ProtectedRoute>} />
+            <Route path="/leagues/:leagueId/survivor/pick/:eventId" element={<ProtectedRoute><SurvivorPick /></ProtectedRoute>} />
+            <Route path="/showcase" element={<FightCardShowcase />} />
+          </Route>
 
-          {/* Home → Leagues */}
-          <Route path="/" element={<Navigate to="/leagues" replace />} />
-
-          <Route path="/leagues" element={
-            <ProtectedRoute>
-              <LeaguesHub />
-            </ProtectedRoute>
-          } />
-          <Route path="/leagues/create" element={
-            <ProtectedRoute>
-              <CreateLeague />
-            </ProtectedRoute>
-          } />
-          <Route path="/leagues/:leagueId" element={
-            <ProtectedRoute>
-              <LeagueDashboard />
-            </ProtectedRoute>
-          } />
-
-          {/* Survivor pick flow (within league context) */}
-          <Route path="/leagues/:leagueId/survivor/pick/:eventId" element={
-            <ProtectedRoute>
-              <SurvivorPick />
-            </ProtectedRoute>
-          } />
-
-          {/* Admin Routes */}
+          {/* Full width routes (Admin layout manages its own width) */}
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />
             <Route path="results" element={<AdminResults />} />
             <Route path="events" element={<AdminEvents />} />
           </Route>
-
-          <Route path="/showcase" element={<FightCardShowcase />} />
         </Routes>
       </main>
     </div>
@@ -114,12 +94,10 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <LeagueProvider>
-          <SurvivorProvider>
-            <AppContent />
-            <Toaster position="top-center" richColors />
-          </SurvivorProvider>
-        </LeagueProvider>
+        <SurvivorProvider>
+          <AppContent />
+          <Toaster position="top-center" richColors />
+        </SurvivorProvider>
       </AuthProvider>
     </Router>
   );

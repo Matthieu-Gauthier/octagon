@@ -9,6 +9,7 @@ import { LeaguesModule } from './leagues/leagues.module';
 import { EventsModule } from './events/events.module';
 import { BetsModule } from './bets/bets.module';
 import { FightersModule } from './fighters/fighters.module';
+import { FightsModule } from './fights/fights.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthController } from './health/health.controller';
 
@@ -21,6 +22,7 @@ import { HealthController } from './health/health.controller';
     EventsModule,
     BetsModule,
     FightersModule,
+    FightsModule,
     AdminModule,
   ],
   controllers: [AppController, HealthController],

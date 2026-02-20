@@ -1,23 +1,26 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useLeague } from "@/context/LeagueContext";
+import { useLeagues, useJoinLeague } from "@/hooks/useLeagues"; // Updated Import
 import { Plus, Users, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+
 
 export function LeaguesHub() {
-    const { myLeagues, joinLeague } = useLeague();
+    // const { myLeagues, joinLeague } = useLeague(); // Deprecated context usage
+    const { data: myLeagues, isLoading } = useLeagues();
+    const { mutateAsync: joinLeague } = useJoinLeague();
     const [joinCode, setJoinCode] = useState("");
 
     const handleJoin = async () => {
+        if (!joinCode) return;
         try {
             await joinLeague(joinCode);
-            toast.success("Joined league successfully!");
+            // toast handled by hook
             setJoinCode("");
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Failed to join");
+            // error handled by hook
         }
     };
 
@@ -54,13 +57,15 @@ export function LeaguesHub() {
 
             <div className="space-y-4">
                 <h2 className="text-xl font-bold">My Leagues</h2>
-                {myLeagues.length === 0 ? (
+                {isLoading ? (
+                    <div>Loading...</div>
+                ) : !myLeagues || myLeagues.length === 0 ? (
                     <div className="text-center py-10 bg-muted/20 rounded-lg border-2 border-dashed">
                         <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                         <h3 className="font-semibold">No leagues yet</h3>
                         <p className="text-sm text-muted-foreground">Join one above or create your own!</p>
                     </div>
-                ) : (
+                ) : ( // Added space here for clarity with next block
                     <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
                         {myLeagues.map(league => (
                             <Link key={league.id} to={`/leagues/${league.id}`}>
@@ -71,7 +76,7 @@ export function LeaguesHub() {
                                             <ArrowRight className="h-4 w-4 text-muted-foreground" />
                                         </CardTitle>
                                         <CardDescription className="flex items-center gap-2">
-                                            {league.members.length} members
+                                            {league._count?.members ?? league.members?.length ?? 0} members
                                             {league.survivorEnabled && (
                                                 <span className="text-orange-500 text-[10px] font-bold">🔥 SURVIVOR</span>
                                             )}

@@ -1,11 +1,17 @@
-import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
     console.log('Seeding database...');
 
-    // 1. Clean up
+    // 1. Clean up (YES, this resets the DB as requested)
     await prisma.bet.deleteMany();
     await prisma.survivorPick.deleteMany();
     await prisma.leagueMember.deleteMany();
@@ -69,14 +75,40 @@ async function main() {
     }
 
     // 4. Fighters
+    // We add ALL fighters for the event here
     const fighters = [
-        { id: "strickland", name: "Sean Strickland", record: "29-6-0" },
-        { id: "hernandez", name: "Anthony Hernandez", record: "14-2-0" },
-        { id: "bautista", name: "Mario Bautista", record: "14-2-0" },
-        { id: "v-oliveira", name: "Vinicius Oliveira", record: "21-4-0" },
-        // Add dummy fighters for other fights if needed to avoid relation errors
-        { id: "neal", name: "Geoff Neal", record: "16-5-0" },
-        { id: "medic", name: "Uroš Medić", record: "9-2-0" }
+        // Main Event
+        { id: "strickland", name: "Sean Strickland", record: "29-7-0" },
+        { id: "hernandez", name: "Anthony Hernandez", record: "15-2-0" },
+        // Co-Main
+        { id: "neal", name: "Geoff Neal", record: "16-7-0" },
+        { id: "medic", name: "Uroš Medić", record: "12-3-0" },
+        // Main Card
+        { id: "ige", name: "Dan Ige", record: "19-10-0" },
+        { id: "costa", name: "Melquizael Costa", record: "25-7-0" },
+        { id: "spivac", name: "Serghei Spivac", record: "17-6-0" },
+        { id: "delija", name: "Ante Delija", record: "26-7-0" },
+        { id: "smith", name: "Jacobe Smith", record: "11-0-0" },
+        { id: "harrell", name: "Josiah Harrell", record: "11-0-0" },
+        { id: "reese", name: "Zach Reese", record: "10-2-0" },
+        { id: "pereira", name: "Michel Pereira", record: "31-14-0" },
+        // Prelims
+        { id: "njokuani", name: "Chidi Njokuani", record: "25-11-0" },
+        { id: "leal", name: "Carlos Leal", record: "22-7-0" },
+        { id: "osbourne", name: "Ode Osbourne", record: "13-9-0" },
+        { id: "idiris", name: "Alibi Idiris", record: "11-1-0" },
+        { id: "gurule", name: "Luis Gurule", record: "10-2-0" },
+        { id: "coria", name: "Alden Coria", record: "11-3-0" },
+        { id: "cornolle", name: "Nora Cornolle", record: "9-3-0" },
+        { id: "edwards", name: "Joselyne Edwards", record: "16-6-0" },
+        { id: "soriano", name: "Punahele Soriano", record: "12-4-0" },
+        { id: "brahimaj", name: "Ramiz Brahimaj", record: "13-5-0" },
+        { id: "rowe", name: "Phil Rowe", record: "11-6-0" },
+        { id: "lebosnoyani", name: "Jean-Paul Lebosnoyani", record: "9-2-0" },
+        { id: "delvalle", name: "Yadier del Valle", record: "10-0-0" },
+        { id: "leavitt", name: "Jordan Leavitt", record: "12-3-0" },
+        { id: "judice", name: "Carli Judice", record: "5-2-0" },
+        { id: "miller", name: "Juliana Miller", record: "5-3-0" }
     ];
 
     for (const f of fighters) {
@@ -88,11 +120,12 @@ async function main() {
         data: {
             id: "ufn-strickland-hernandez",
             name: "UFC Fight Night: Strickland vs. Hernandez",
-            date: new Date("2026-02-22T01:00:00Z"),
+            date: new Date("2026-02-21T20:00:00-05:00"), // Set to slightly in future or adjust as needed
             location: "Toyota Center, Houston, TX",
             status: "SCHEDULED",
             fights: {
                 create: [
+                    // --- MAIN CARD ---
                     {
                         id: "fs-main",
                         fighterAId: "strickland",
@@ -109,6 +142,118 @@ async function main() {
                         division: "Welterweight",
                         rounds: 3,
                         isCoMainEvent: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-ige-costa",
+                        fighterAId: "ige",
+                        fighterBId: "costa",
+                        division: "Featherweight",
+                        rounds: 3,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-spivac-delija",
+                        fighterAId: "spivac",
+                        fighterBId: "delija",
+                        division: "Heavyweight",
+                        rounds: 3,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-smith-harrell",
+                        fighterAId: "smith",
+                        fighterBId: "harrell",
+                        division: "Welterweight",
+                        rounds: 3,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-reese-pereira",
+                        fighterAId: "reese",
+                        fighterBId: "pereira",
+                        division: "Middleweight",
+                        rounds: 3,
+                        status: "SCHEDULED"
+                    },
+                    // --- PRELIMS ---
+                    {
+                        id: "fs-njokuani-leal",
+                        fighterAId: "njokuani",
+                        fighterBId: "leal",
+                        division: "Welterweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-osbourne-idiris",
+                        fighterAId: "osbourne",
+                        fighterBId: "idiris",
+                        division: "Flyweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-gurule-coria",
+                        fighterAId: "gurule",
+                        fighterBId: "coria",
+                        division: "Flyweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-cornolle-edwards",
+                        fighterAId: "cornolle",
+                        fighterBId: "edwards",
+                        division: "Women's Bantamweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-soriano-brahimaj",
+                        fighterAId: "soriano",
+                        fighterBId: "brahimaj",
+                        division: "Welterweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-rowe-lebosnoyani",
+                        fighterAId: "rowe",
+                        fighterBId: "lebosnoyani",
+                        division: "Welterweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-delvalle-leavitt",
+                        fighterAId: "delvalle",
+                        fighterBId: "leavitt",
+                        division: "Featherweight",
+                        rounds: 3,
+                        isMainCard: false,
+                        isPrelim: true,
+                        status: "SCHEDULED"
+                    },
+                    {
+                        id: "fs-judice-miller",
+                        fighterAId: "judice",
+                        fighterBId: "miller",
+                        division: "Women's Flyweight",
+                        rounds: 3,
+                        isPrelim: true,
                         status: "SCHEDULED"
                     }
                 ]

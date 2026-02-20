@@ -1,25 +1,49 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { MOCK_EVENTS } from "@/data/mock-data";
+import { useEvent } from "@/hooks/useEvents";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useSurvivor } from "@/context/SurvivorContext";
 import { Button } from "@/components/ui/button";
 import { VegasFightCard } from "@/components/FightCard";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function SurvivorPick() {
     const { eventId } = useParams();
     const navigate = useNavigate();
     const { makePick, getPicksForEvent } = useSurvivor();
-    const event = MOCK_EVENTS.find(e => e.id === eventId);
 
-    // Initialize selections from existing picks
-    const existingPicks = getPicksForEvent(eventId || "");
-    const initialSelections: Record<string, string> = {};
-    existingPicks.forEach(p => { initialSelections[p.fightId] = p.fighterId; });
+    // Fetch Data
+    const { data: event, isLoading, error } = useEvent(eventId || "");
 
-    const [selections, setSelections] = useState<Record<string, string>>(initialSelections);
+    // State
+    const [selections, setSelections] = useState<Record<string, string>>({});
 
-    if (!event) return <div>Event not found</div>;
+    // Effect to initialize picks once event is loaded
+    useEffect(() => {
+        if (event && eventId) {
+            const existingPicks = getPicksForEvent(eventId);
+            const initialSelections: Record<string, string> = {};
+            existingPicks.forEach(p => { initialSelections[p.fightId] = p.fighterId; });
+            setSelections(initialSelections);
+        }
+    }, [event, eventId, getPicksForEvent]);
+
+    if (isLoading) {
+        return (
+            <div className="space-y-6 max-w-4xl mx-auto pb-20 pt-10 px-4">
+                <Skeleton className="h-8 w-64 mx-auto" />
+                <Skeleton className="h-4 w-48 mx-auto" />
+                <div className="space-y-4 mt-8">
+                    {[1, 2, 3].map(i => (
+                        <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+                    ))}
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !event) return <div className="text-center py-10">Event not found</div>;
+
 
     const handlePickChange = (fightId: string, winnerId: string | null) => {
         if (!winnerId) return;
@@ -27,7 +51,7 @@ export function SurvivorPick() {
         makePick(event.id, fightId, winnerId);
     };
 
-    const isComplete = event.fights.length === Object.keys(selections).length;
+    const isComplete = (event.fights?.length || 0) === Object.keys(selections).length;
 
     const handleFinish = () => {
         if (!isComplete) {
@@ -44,15 +68,16 @@ export function SurvivorPick() {
                 <h1 className="text-2xl font-bold">Survivor Picks</h1>
                 <p className="text-muted-foreground">Pick a winner for <span className="font-bold text-foreground">EVERY</span> fight.</p>
                 <div className="text-sm font-medium">
-                    Progress: {Object.keys(selections).length} / {event.fights.length}
+                    Progress: {Object.keys(selections).length} / {event.fights?.length || 0}
                 </div>
             </div>
 
             <div className="grid gap-4">
-                {event.fights.map((fight) => (
+                {(event.fights || []).map((fight) => (
                     <VegasFightCard
                         key={fight.id}
                         fight={fight}
+
                         mode="winner"
                         value={selections[fight.id] ? { winnerId: selections[fight.id] } : null}
                         onPickChange={(pick) => handlePickChange(fight.id, pick?.winnerId ?? null)}
@@ -67,7 +92,7 @@ export function SurvivorPick() {
                     onClick={handleFinish}
                     disabled={!isComplete}
                 >
-                    {isComplete ? "Confirm All Picks" : `${event.fights.length - Object.keys(selections).length} Picks Remaining`}
+                    {isComplete ? "Confirm All Picks" : `${(event.fights?.length || 0) - Object.keys(selections).length} Picks Remaining`}
                 </Button>
             </div>
         </div>

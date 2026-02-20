@@ -6,13 +6,59 @@ import { Prisma } from '@prisma/client';
 export class LeaguesService {
     constructor(private prisma: PrismaService) { }
 
-    async create(data: Prisma.LeagueUncheckedCreateInput) {
+    async create(data: any) {
+        // Ensure admin user exists in local DB
+        const { adminId, adminEmail } = data;
+
+        if (adminId && adminEmail) {
+            await this.prisma.user.upsert({
+                where: { id: adminId },
+                update: {}, // No update needed if exists
+                create: {
+                    id: adminId,
+                    email: adminEmail,
+                    username: adminEmail.split('@')[0], // Fallback username
+                },
+            });
+        }
+
+        // Remove helper fields that are not in League model
+        delete data.adminEmail;
+
+        // Generate unique code if not provided
+        if (!data.code) {
+            data.code = await this.generateUniqueCode();
+        }
         return this.prisma.league.create({ data });
     }
 
-    async findAll() {
+    private async generateUniqueCode(): Promise<string> {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        let isUnique = false;
+
+        while (!isUnique) {
+            code = '';
+            for (let i = 0; i < 6; i++) {
+                code += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+
+            const existing = await this.prisma.league.findUnique({ where: { code } });
+            if (!existing) isUnique = true;
+        }
+        return code;
+    }
+
+    async findAll(userId: string) {
         return this.prisma.league.findMany({
-            where: { isArchived: false },
+            where: {
+                isArchived: false,
+                members: {
+                    some: {
+                        userId: userId
+                    }
+                }
+            },
             include: { admin: true, _count: { select: { members: true } } },
         });
     }
@@ -40,9 +86,22 @@ export class LeaguesService {
         });
     }
 
-    async join(code: string, userId: string) {
+    async join(code: string, userId: string, email?: string) {
         const league = await this.prisma.league.findUnique({ where: { code } });
         if (!league) throw new NotFoundException('Invalid league code');
+
+        // Ensure user exists
+        if (email) {
+            await this.prisma.user.upsert({
+                where: { id: userId },
+                update: {},
+                create: {
+                    id: userId,
+                    email: email,
+                    username: email.split('@')[0],
+                },
+            });
+        }
 
         try {
             return await this.prisma.leagueMember.create({
@@ -79,7 +138,8 @@ export class LeaguesService {
 
         if (!league) throw new NotFoundException('League not found');
 
-        const settings = league.scoringSettings as any; // { winner: 10, method: 5, round: 5 }
+        const defaultSettings = { winner: 10, method: 5, round: 5, decision: 0 };
+        const settings = { ...defaultSettings, ...(league.scoringSettings as object || {}) };
 
         // Group bets by user
         const betsByUser = new Map<string, any[]>();
@@ -95,6 +155,8 @@ export class LeaguesService {
             let perfectPicks = 0;
             let betsPlaced = 0;
 
+            let correctWinners = 0;
+
             for (const bet of userBets) {
                 const fight = bet.fight;
                 if (fight.status === 'FINISHED' && fight.winnerId) {
@@ -102,6 +164,7 @@ export class LeaguesService {
 
                     // Check Winner
                     if (bet.winnerId === fight.winnerId) {
+                        correctWinners++;
                         points += (settings.winner || 10);
 
                         // Check Method
@@ -111,14 +174,18 @@ export class LeaguesService {
                             methodCorrect = true;
                         }
 
-                        // Check Round
+                        // Check Round or Decision
+                        const isDecisionPerfect = methodCorrect && (bet.method === "DECISION" || bet.method === "DRAW");
                         let roundCorrect = false;
-                        if (bet.round && fight.round && bet.round === fight.round) {
-                            points += (settings.round || 5); // Assuming default 5 if missing setting, but JSON default is there
+
+                        if (isDecisionPerfect) {
+                            points += (settings.decision !== undefined ? settings.decision : 10);
+                        } else if (bet.round && fight.round && bet.round === fight.round) {
+                            points += (settings.round || 5);
                             roundCorrect = true;
                         }
 
-                        if (methodCorrect && roundCorrect) perfectPicks++;
+                        if (methodCorrect && (roundCorrect || isDecisionPerfect)) perfectPicks++;
                     }
                 }
             }
@@ -127,6 +194,8 @@ export class LeaguesService {
                 userId: member.userId,
                 username: member.user.username,
                 points,
+                correct: correctWinners,
+                total: betsPlaced,
                 betsPlaced,
                 perfectPicks,
                 rank: 0,

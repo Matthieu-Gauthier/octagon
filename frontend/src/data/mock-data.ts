@@ -25,7 +25,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: true,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "bautista", method: "SUBMISSION", round: 2, time: "4:46" }
+                winnerId: "bautista", method: "SUBMISSION", round: 2, time: "4:46"
             },
             {
                 id: "fb-comain",
@@ -37,7 +37,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isCoMainEvent: true,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "horiguchi", method: "DECISION" }
+                winnerId: "horiguchi", method: "DECISION"
             },
             {
                 id: "fb-3",
@@ -48,7 +48,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "kuniev", method: "DECISION" }
+                winnerId: "kuniev", method: "DECISION"
             },
             {
                 id: "fb-4",
@@ -59,7 +59,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "oleksiejczuk", method: "DECISION" }
+                winnerId: "oleksiejczuk", method: "DECISION"
             },
             {
                 id: "fb-5",
@@ -70,7 +70,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "f-basharat", method: "DECISION" }
+                winnerId: "f-basharat", method: "DECISION"
             },
             {
                 id: "fb-6",
@@ -81,7 +81,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: true,
                 status: "FINISHED",
-                result: { winnerId: "jacoby", method: "KO/TKO", round: 2, time: "1:42" }
+                winnerId: "jacoby", method: "KO/TKO", round: 2, time: "1:42"
             },
             // Prelims
             {
@@ -93,7 +93,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: false,
                 status: "FINISHED",
-                result: { winnerId: "donchenko", method: "DECISION" }
+                winnerId: "donchenko", method: "DECISION"
             },
             {
                 id: "fb-p2",
@@ -104,7 +104,7 @@ export const MOCK_EVENTS: UfcEvent[] = [
                 isMainEvent: false,
                 isMainCard: false,
                 status: "FINISHED",
-                result: { winnerId: "veretennikov", method: "KO/TKO", round: 1, time: "1:42" }
+                winnerId: "veretennikov", method: "KO/TKO", round: 1, time: "1:42"
             },
         ]
     },

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Request, Query, Delete, Param } from '@nestjs/common';
 import { BetsService } from './bets.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
 
@@ -25,5 +25,11 @@ export class BetsController {
     @UseGuards(SupabaseGuard)
     findMyBets(@Request() req: any, @Query('leagueId') leagueId: string) {
         return this.betsService.findMyBets(req.user.sub, leagueId);
+    }
+
+    @Delete(':id')
+    @UseGuards(SupabaseGuard)
+    remove(@Param('id') id: string, @Request() req: any) {
+        return this.betsService.remove(id, req.user.sub);
     }
 }

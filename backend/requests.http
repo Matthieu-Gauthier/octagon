@@ -1,0 +1,19 @@
+### Get Leagues (Replace TOKEN with your actual JWT)
+GET http://localhost:3000/api/v1/leagues
+Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+
+### Create League
+POST http://localhost:3000/api/v1/leagues
+Authorization: Bearer <PASTE_YOUR_TOKEN_HERE>
+Content-Type: application/json
+
+{
+  "name": "Debug League",
+  "survivorEnabled": true,
+  "scoringSettings": {
+      "winner": 10,
+      "method": 3,
+      "round": 3,
+      "decision": 1
+  }
+}
