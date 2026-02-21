@@ -56,16 +56,19 @@ model LeagueMember {
 }
 
 model Event {
-  id        String   @id // internal string ID like 'ufc-300' or UUID? Mock uses string slugs.
-  name      String
-  date      DateTime
-  location  String
-  status    String   // SCHEDULED, LIVE, FINISHED
-  
+  id              String    @id
+  name            String
+  date            DateTime
+  location        String
+  status          String            // SCHEDULED, LIVE, FINISHED
+  prelimsStartAt  DateTime?         // scraped from #prelims-card data-timestamp
+  mainCardStartAt DateTime?         // scraped from #main-card data-timestamp
+
   fights    Fight[]
 
   @@map("events")
 }
+
 
 model Fighter {
   id        String   @id // slug like 'jon-jones'

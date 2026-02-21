@@ -19,11 +19,15 @@ export class BetsService {
         });
         if (!fight) throw new NotFoundException('Fight not found');
 
-        // 2. Validate Time & Status
-        // Strict cutoff based on Event Date OR Fight Status
+        // 2. Validate Time & Status — use per-card-section cutoff
         const now = new Date();
-        if (now >= fight.event.date) {
-            throw new BadRequestException('Betting is closed for this event');
+        const cutoff = fight.isPrelim
+            ? (fight.event.prelimsStartAt ?? fight.event.date)
+            : (fight.event.mainCardStartAt ?? fight.event.date);
+
+        if (now >= cutoff) {
+            const section = fight.isPrelim ? 'preliminary card' : 'main card';
+            throw new BadRequestException(`Betting is closed for ${section} fights`);
         }
         if (fight.status === 'FINISHED') {
             throw new BadRequestException('Betting is closed for this fight');

@@ -42,6 +42,8 @@ export interface ScrapedEvent {
     date: Date;
     location: string;
     status: string;
+    prelimsStartAt?: Date;    // scraped from #prelims-card .c-event-fight-card-broadcaster__time[data-timestamp]
+    mainCardStartAt?: Date;   // scraped from #main-card .c-event-fight-card-broadcaster__time[data-timestamp]
 }
 
 export interface ScrapedEventData {
@@ -89,6 +91,8 @@ export class ScraperService {
                 date: eventDate,
                 location,
                 status: 'SCHEDULED',
+                prelimsStartAt: this.extractSectionTimestamp($ev, '#prelims-card'),
+                mainCardStartAt: this.extractSectionTimestamp($ev, '#main-card'),
             };
 
             const fights: ScrapedFight[] = [];
@@ -158,6 +162,18 @@ export class ScraperService {
             this.logger.error(`Scraping failed: ${error}`);
             return null;
         }
+    }
+
+    /**
+     * Extracts the start timestamp from the broadcaster time element inside a card section.
+     * Reads data-timestamp (Unix seconds) from .c-event-fight-card-broadcaster__time within sectionId.
+     * Returns undefined if the element or attribute is missing.
+     */
+    private extractSectionTimestamp($: cheerio.CheerioAPI, sectionId: string): Date | undefined {
+        const ts = $(`${sectionId} .c-event-fight-card-broadcaster__time`).first().attr('data-timestamp');
+        if (!ts) return undefined;
+        const parsed = parseInt(ts, 10);
+        return isNaN(parsed) ? undefined : new Date(parsed * 1000);
     }
 
     private async scrapeFighter(slug: string): Promise<ScrapedFighter> {

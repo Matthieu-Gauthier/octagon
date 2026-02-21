@@ -65,6 +65,8 @@ export class EventsService {
                 date: event.date,
                 location: event.location,
                 status: event.status,
+                prelimsStartAt: event.prelimsStartAt ?? null,
+                mainCardStartAt: event.mainCardStartAt ?? null,
             },
             create: event,
         });

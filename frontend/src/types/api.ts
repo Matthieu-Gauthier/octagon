@@ -52,6 +52,8 @@ export interface Event {
     location?: string;
     status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
     fights?: Fight[];
+    prelimsStartAt?: string | null;   // from #prelims-card data-timestamp
+    mainCardStartAt?: string | null;  // from #main-card data-timestamp
 }
 
 // Alias kept for backward compat with components using UfcEvent

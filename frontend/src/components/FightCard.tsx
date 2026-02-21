@@ -102,8 +102,10 @@ interface VegasFightCardProps {
     value?: FightCardPick | null;
     /** Called whenever the pick changes (betting mode). */
     onPickChange?: (pick: FightCardPick | null) => void;
-    /** If true, the card is read-only (past event). */
+    /** If true, the card is read-only (past event / FINISHED). */
     locked?: boolean;
+    /** ISO datetime string — when this card's section bets lock. Shown as a deadline indicator. */
+    lockAt?: string | null;
     /** If provided, shows a result comparison footer. */
     resultBreakdown?: ResultBreakdown;
 }
@@ -111,11 +113,14 @@ interface VegasFightCardProps {
 // ============================================================================
 // Main Component (Refactored to match ShowcaseCard)
 // ============================================================================
-export function VegasFightCard({ fight, mode = "full", value = null, onPickChange, locked = false }: VegasFightCardProps) {
+export function VegasFightCard({ fight, mode = "full", value = null, onPickChange, locked = false, lockAt }: VegasFightCardProps) {
     const [winner, setWinner] = useState<string | null>(value?.winnerId ?? null);
     const [method, setMethod] = useState<Method | null>((value?.method as Method) ?? null);
     const [round, setRound] = useState<number | null>(value?.round ?? null);
     const [showDrawer, setShowDrawer] = useState(true);
+
+    // Derive locked state: either externally forced, or lockAt timestamp has passed
+    const isLocked = locked || (!!lockAt && new Date() >= new Date(lockAt));
 
     // Sync from external value
     useEffect(() => {
@@ -131,13 +136,13 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     // Auto-close drawer 1s after pick is complete (only in full/admin mode)
     // Auto-close drawer 1s after pick is complete (only in full mode)
     useEffect(() => {
-        if (mode === "full" && isComplete && !locked) {
+        if (mode === "full" && isComplete && !isLocked) {
             const timer = setTimeout(() => setShowDrawer(false), 1000);
             return () => clearTimeout(timer);
         } else if (!isComplete) {
             setShowDrawer(true);
         }
-    }, [isComplete, method, round, mode, locked]);
+    }, [isComplete, method, round, mode, isLocked]);
 
     const notifyChange = (w: string | null, m: Method | null, r: number | null) => {
         const payload = w ? { winnerId: w, method: m ?? undefined, round: r ?? undefined } : null;
@@ -147,7 +152,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     };
 
     const handleFighterClick = (id: string, e: React.MouseEvent) => {
-        if (locked) return;
+        if (isLocked) return;
         // Ignore clicks inside the selection drawer
         if ((e.target as HTMLElement).closest('.selection-area')) return;
 
@@ -167,7 +172,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     };
 
     const pickMethod = (m: Method) => {
-        if (locked) return;
+        if (isLocked) return;
         const newMethod = method === m ? null : m;
         const newRound = null;
         setMethod(newMethod);
@@ -176,14 +181,14 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     };
 
     const pickRound = (r: number) => {
-        if (locked) return;
+        if (isLocked) return;
         const newRound = round === r ? null : r;
         setRound(newRound);
         notifyChange(winner, method, newRound);
     };
 
     const reset = (e?: React.MouseEvent) => {
-        if (locked) return;
+        if (isLocked) return;
         e?.stopPropagation();
         setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
         notifyChange(null, null, null);
@@ -225,6 +230,30 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <Flame className="h-3 w-3 text-red-500 fill-red-500/20" />
                             <span className="text-[9px] font-black tracking-[0.2em] uppercase text-red-100 drop-shadow-sm">Main Event</span>
                         </div>
+                        <div className="absolute left-1/2 -translate-x-1/2">
+                            {lockAt && (
+                                <div className={cn(
+                                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] border shadow-sm",
+                                    isLocked ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-950/60 border-zinc-700/50"
+                                )}>
+                                    <Lock className="h-2 w-2 text-zinc-500" />
+                                    {isLocked ? (
+                                        <span className="font-bold uppercase tracking-wider text-zinc-500">Locked</span>
+                                    ) : (
+                                        <span className="text-zinc-400 font-medium tracking-wide">
+                                            <span className="text-zinc-200 font-bold">
+                                                {new Date(lockAt).toLocaleString('en-US', {
+                                                    weekday: 'short',
+                                                    day: 'numeric',
+                                                    hour: 'numeric',
+                                                    timeZoneName: 'short',
+                                                }).replace(',', '')}
+                                            </span>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <div className="flex items-center gap-1.5">
                             <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.division}</Badge>
                             <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.rounds} RND</Badge>
@@ -237,6 +266,30 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <Shield className="h-3 w-3 text-zinc-400 fill-zinc-400/20" />
                             <span className="text-[9px] font-black tracking-[0.2em] uppercase text-zinc-300 drop-shadow-sm">Co-Main Event</span>
                         </div>
+                        <div className="absolute left-1/2 -translate-x-1/2">
+                            {lockAt && (
+                                <div className={cn(
+                                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] border shadow-sm",
+                                    isLocked ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-950/60 border-zinc-700/50"
+                                )}>
+                                    <Lock className="h-2 w-2 text-zinc-500" />
+                                    {isLocked ? (
+                                        <span className="font-bold uppercase tracking-wider text-zinc-500">Locked</span>
+                                    ) : (
+                                        <span className="text-zinc-400 font-medium tracking-wide">
+                                            <span className="text-zinc-200 font-bold">
+                                                {new Date(lockAt).toLocaleString('en-US', {
+                                                    weekday: 'short',
+                                                    day: 'numeric',
+                                                    hour: 'numeric',
+                                                    timeZoneName: 'short',
+                                                }).replace(',', '')}
+                                            </span>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <div className="flex items-center gap-1.5">
                             <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.division}</Badge>
                             <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{fight.rounds} RND</Badge>
@@ -244,8 +297,34 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     </div>
                 )}
                 {eventType === "standard" && (
-                    <div className="flex justify-between items-start p-3 bg-gradient-to-b from-zinc-950/80 to-transparent">
+                    <div className="flex justify-between items-start p-3 bg-gradient-to-b from-zinc-950/80 to-transparent relative">
                         <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.division}</Badge>
+
+                        <div className="absolute top-3 left-1/2 -translate-x-1/2">
+                            {lockAt && (
+                                <div className={cn(
+                                    "flex items-center gap-1 px-2 py-0.5 rounded-full text-[8px] border backdrop-blur-md shadow-sm",
+                                    isLocked ? "bg-zinc-950/80 border-zinc-800" : "bg-zinc-950/60 border-zinc-700/50"
+                                )}>
+                                    <Lock className="h-2 w-2 text-zinc-500" />
+                                    {isLocked ? (
+                                        <span className="font-bold uppercase tracking-wider text-zinc-500">Locked</span>
+                                    ) : (
+                                        <span className="text-zinc-400 font-medium tracking-wide">
+                                            <span className="text-zinc-200 font-bold">
+                                                {new Date(lockAt).toLocaleString('en-US', {
+                                                    weekday: 'short',
+                                                    day: 'numeric',
+                                                    hour: 'numeric',
+                                                    timeZoneName: 'short',
+                                                }).replace(',', '')}
+                                            </span>
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.rounds} RND</Badge>
                     </div>
                 )}
@@ -267,7 +346,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     onClick={(e) => handleFighterClick(fight.fighterA.id, e)}
                     className={cn(
                         locked ? "cursor-default" : "cursor-pointer",
-                        winner === fight.fighterA.id ? "bg-red-900/20" : (!locked && "hover:bg-zinc-900/10"),
+                        winner === fight.fighterA.id ? "bg-red-900/20" : (!isLocked && "hover:bg-zinc-900/10"),
                         winner === fight.fighterB.id && "grayscale opacity-50",
                         !winner && "grayscale"
                     )}
@@ -283,7 +362,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.wins}-{fight.fighterA.losses}-{fight.fighterA.noContests}</p>
                             {winner === fight.fighterA.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
-                                    {locked ? <Lock className="w-2.5 h-2.5 text-red-400" /> : <Check className="w-2.5 h-2.5 text-red-400" />}
+                                    {isLocked ? <Lock className="w-2.5 h-2.5 text-red-400" /> : <Check className="w-2.5 h-2.5 text-red-400" />}
                                     <span className="text-[9px] font-black text-red-200 uppercase tracking-wide">{getShortSummary()}</span>
                                 </div>
                             )}
@@ -311,7 +390,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     onClick={(e) => handleFighterClick(fight.fighterB.id, e)}
                     className={cn(
                         locked ? "cursor-default" : "cursor-pointer",
-                        winner === fight.fighterB.id ? "bg-blue-900/20" : (!locked && "hover:bg-zinc-900/10"),
+                        winner === fight.fighterB.id ? "bg-blue-900/20" : (!isLocked && "hover:bg-zinc-900/10"),
                         winner === fight.fighterA.id && "grayscale opacity-50",
                         !winner && "grayscale"
                     )}
@@ -327,7 +406,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.wins}-{fight.fighterB.losses}-{fight.fighterB.noContests}</p>
                             {winner === fight.fighterB.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
-                                    {locked ? <Lock className="w-2.5 h-2.5 text-blue-400" /> : <Check className="w-2.5 h-2.5 text-blue-400" />}
+                                    {isLocked ? <Lock className="w-2.5 h-2.5 text-blue-400" /> : <Check className="w-2.5 h-2.5 text-blue-400" />}
                                     <span className="text-[9px] font-black text-blue-200 uppercase tracking-wide">{getShortSummary()}</span>
                                 </div>
                             )}
@@ -339,7 +418,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
             {/* ============================================================== */}
             {/* BOTTOM DRAWER SELECTION (Only enable in "full" mode)          */}
             {/* ============================================================== */}
-            {!locked && mode === "full" && winner && showDrawer && (
+            {!isLocked && mode === "full" && winner && showDrawer && (
                 <div className="selection-area absolute bottom-0 inset-x-0 z-40 animate-in slide-in-from-bottom-8 duration-300">
                     {/* Backdrop gradient */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pointer-events-none" />

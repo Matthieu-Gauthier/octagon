@@ -20,7 +20,7 @@ import { useGameRealtime } from "@/hooks/useGameRealtime";
 // Fight Card with league-scoped bets
 // ============================================================================
 
-function LeagueFightCard({ fight, leagueId, locked, myBets, onPlaceBet, onRemoveBet }: { fight: Fight; leagueId: string; locked: boolean; myBets: Bet[]; onPlaceBet: (bet: BetDTO) => void; onRemoveBet: (betId: string) => void }) {
+function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, onRemoveBet }: { fight: Fight; leagueId: string; locked: boolean; lockAt?: string | null; myBets: Bet[]; onPlaceBet: (bet: BetDTO) => void; onRemoveBet: (betId: string) => void }) {
 
     const liveBet = myBets.find(b => b.fightId === fight.id);
     const bet = liveBet;
@@ -33,6 +33,7 @@ function LeagueFightCard({ fight, leagueId, locked, myBets, onPlaceBet, onRemove
             mode="full"
             value={value}
             locked={locked}
+            lockAt={lockAt}
             onPickChange={locked ? undefined : (pick) => {
                 if (!pick) {
                     if (bet && bet.id) {
@@ -535,7 +536,16 @@ export function LeagueDashboard() {
                 {mainCardOpen && (
                     <div className="space-y-4 mt-3 animate-in fade-in">
                         {mainCardFights.map(fight => (
-                            <LeagueFightCard key={fight.id} fight={fight} leagueId={league.id} locked={locked || fight.status === "FINISHED"} myBets={myBets || []} onPlaceBet={placeBet} onRemoveBet={removeBet} />
+                            <LeagueFightCard
+                                key={fight.id}
+                                fight={fight}
+                                leagueId={league.id}
+                                locked={locked || fight.status === "FINISHED"}
+                                lockAt={fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt}
+                                myBets={myBets || []}
+                                onPlaceBet={placeBet}
+                                onRemoveBet={removeBet}
+                            />
                         ))}
                     </div>
                 )}
@@ -577,7 +587,16 @@ export function LeagueDashboard() {
                     {prelimsOpen && (
                         <div className="space-y-4 mt-3 animate-in fade-in">
                             {prelimFights.map(fight => (
-                                <LeagueFightCard key={fight.id} fight={fight} leagueId={league.id} locked={locked || fight.status === "FINISHED"} myBets={myBets || []} onPlaceBet={placeBet} onRemoveBet={removeBet} />
+                                <LeagueFightCard
+                                    key={fight.id}
+                                    fight={fight}
+                                    leagueId={league.id}
+                                    locked={locked || fight.status === "FINISHED"}
+                                    lockAt={(fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt) || event.date}
+                                    myBets={myBets || []}
+                                    onPlaceBet={placeBet}
+                                    onRemoveBet={removeBet}
+                                />
                             ))}
                         </div>
                     )}

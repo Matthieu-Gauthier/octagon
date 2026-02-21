@@ -78,10 +78,10 @@ export function SurvivorPick() {
                     <VegasFightCard
                         key={fight.id}
                         fight={fight}
-
                         mode="winner"
                         value={selections[fight.id] ? { winnerId: selections[fight.id] } : null}
                         onPickChange={(pick) => handlePickChange(fight.id, pick?.winnerId ?? null)}
+                        lockAt={(fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt) || event.date}
                     />
                 ))}
             </div>
