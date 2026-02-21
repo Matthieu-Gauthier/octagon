@@ -14,7 +14,6 @@ interface FighterPortraitProps {
 
 export function FighterPortrait({
     fighter,
-    // isWinner, // Removed to avoid lint error
     isLoser,
     isSelected,
     onClick,
@@ -23,9 +22,6 @@ export function FighterPortrait({
     className
 }: FighterPortraitProps) {
     const isLeft = layout === "left";
-    const gradient = isLeft
-        ? "bg-gradient-to-r from-black/60 via-transparent to-transparent"
-        : "bg-gradient-to-l from-black/60 via-transparent to-transparent";
 
     return (
         <div
@@ -37,22 +33,22 @@ export function FighterPortrait({
             )}
             onClick={onClick}
         >
-            {/* Image */}
+            {/* Fighter Image */}
             <img
                 src={fighter.imagePath || "/fighter-silhouette.png"}
                 alt={fighter.name}
                 className={cn(
                     "absolute bottom-0 h-[90%] w-full object-contain object-bottom transition-transform duration-500",
-                    isSelected && "scale-105 drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+                    !isLeft && "scale-x-[-1]",
+                    isSelected && (isLeft ? "scale-105" : "scale-x-[-1] scale-y-[1.05]"),
+                    isSelected && "drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
                 )}
             />
-            {/* Gradient Overlay */}
-            <div className={cn("absolute inset-0", gradient)} />
 
             {/* Custom Content Overlay (Name, Record, etc) */}
             {children}
 
-            {/* Selection Text Overlay (Default WIN/PICK text) */}
+            {/* Selection indicator placeholder */}
             <div className={cn(
                 "absolute bottom-1/3 flex flex-col justify-center items-center pointer-events-none transition-opacity duration-300 z-10",
                 isLeft ? "right-4" : "left-4",

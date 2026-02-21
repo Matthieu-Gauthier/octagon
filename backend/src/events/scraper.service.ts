@@ -112,7 +112,8 @@ export class ScraperService {
                     const el = fightElements[i];
                     const $f = $ev(el);
 
-                    const weightClass = $f.find('.c-listing-fight__class-text').text().trim();
+                    // Simple: take only the first matching element's text
+                    const weightClass = $f.find('.c-listing-fight__class-text').first().text().trim();
                     if (weightClass.toLowerCase().includes('early prelim')) continue;
 
                     const fighterLinks = $f.find('.c-listing-fight__corner-name a');
@@ -136,7 +137,7 @@ export class ScraperService {
                         fighterAId: fASlug,
                         fighterBId: fBSlug,
                         division: weightClass,
-                        rounds: weightClass.toLowerCase().includes('title') ? 5 : 3,
+                        rounds: (globalIndex === 0 || weightClass.toLowerCase().includes('title')) ? 5 : 3,
                         isMainEvent: globalIndex === 0,
                         isCoMainEvent: globalIndex === 1,
                         isMainCard: section.isMainCard,
@@ -165,23 +166,28 @@ export class ScraperService {
         const html = await this.fetchHtml(url);
         const $ = cheerio.load(html);
 
-        // Name
-        const name = $('h1.c-hero__headline').text().trim() || slug.replace(/-/g, ' ');
+        // Name — new: h1.hero-profile__name / fallback: h1.c-hero__headline
+        const name =
+            $('h1.hero-profile__name').text().trim() ||
+            $('h1.c-hero__headline').text().trim() ||
+            slug.replace(/-/g, ' ');
 
-        // Record: "28-6-0 (W-L-D)" or "28-6-0, 1 NC"
-        const recordStr = $('.c-hero__headline-number').text().trim();
+        // Record — new: p.hero-profile__division-body / fallback: .c-hero__headline-number
+        // Format: "28-1-0 (W-L-D)" or "28-6-0, 1 NC"
+        const recordStr =
+            $('p.hero-profile__division-body').text().trim() ||
+            $('.c-hero__headline-number').text().trim();
         const recordMatch = recordStr.match(/(\d+)-(\d+)-(\d+)/);
         const wins = recordMatch ? parseInt(recordMatch[1]) : 0;
         const losses = recordMatch ? parseInt(recordMatch[2]) : 0;
         const draws = recordMatch ? parseInt(recordMatch[3]) : 0;
-        // NC is sometimes appended: "28-6-0, 1 NC"
         const ncMatch = recordStr.match(/(\d+)\s*NC/i);
         const noContests = ncMatch ? parseInt(ncMatch[1]) : 0;
 
-        // Bio stats: each item has a .c-bio__label and a .c-bio__text
+        // Bio stats helper — searches .c-bio__label/.c-bio__text pairs
         const getBioStat = (labelText: string): string | null => {
             let result: string | null = null;
-            $('.c-bio__info-item').each((_, el) => {
+            $('.c-bio__info-item, .c-bio__field').each((_, el) => {
                 const label = $(el).find('.c-bio__label').text().trim().toLowerCase();
                 if (label.includes(labelText.toLowerCase())) {
                     result = $(el).find('.c-bio__text').text().trim() || null;
@@ -191,13 +197,42 @@ export class ScraperService {
             return result;
         };
 
-        const height = getBioStat('Height') ?? getBioStat('Taille');
-        const weight = getBioStat('Weight') ?? getBioStat('Poids');
-        const reach = getBioStat('Reach') ?? getBioStat('Portée');
-        const stance = getBioStat('Stance') ?? getBioStat('Position');
+        // Bio stats — try new field selectors first, then label-based lookup
+        const height =
+            $('div.field--name-gt-height .field__item').first().text().trim() ||
+            getBioStat('height') || getBioStat('taille') || null;
+        const weight =
+            $('div.field--name-gt-weight .field__item').first().text().trim() ||
+            getBioStat('weight') || getBioStat('poids') || null;
+        const reach =
+            $('div.field--name-gt-reach .field__item').first().text().trim() ||
+            getBioStat('reach') || getBioStat('portée') || null;
+        const stance =
+            $('div.field--name-gt-stance .field__item').first().text().trim() ||
+            getBioStat('stance') || getBioStat('posture') || getBioStat('position') || null;
 
-        // Sig. Strikes Landed per min & Takedown Avg
-        // These live in .c-stat-compare blocks — first number in each
+        // Win methods — section .c-stat-3bar, labels: KO/TKO, DÉC/DEC, SOU/SUB
+        // Values format: "10 (28%)" — extract leading number only
+        const getWinMethod = (labels: string[]): number => {
+            let result = 0;
+            $('.c-stat-3bar__group').each((_, el) => {
+                const label = $(el).find('.c-stat-3bar__label').text().trim().toLowerCase();
+                if (labels.some(l => label.includes(l.toLowerCase()))) {
+                    const raw = $(el).find('.c-stat-3bar__value').first().text().trim();
+                    const numMatch = raw.match(/^(\d+)/);
+                    result = numMatch ? parseInt(numMatch[1]) : 0;
+                    return false; // break
+                }
+            });
+            return result;
+        };
+
+        const winsByKo = getWinMethod(['ko/tko', 'ko', 'knockout']);
+        const winsBySub = getWinMethod(['sub', 'sou', 'soumission', 'submission']);
+        const winsByDec = getWinMethod(['dec', 'déc', 'dÉc', 'decision']);
+
+
+        // Sig. Strikes & Takedown avg — remain in .c-stat-compare blocks
         const sigStrikesLandedPerMin = parseFloat(
             $('.c-stat-compare').first().find('.c-stat-compare__number').first().text().trim()
         ) || null;
@@ -205,30 +240,14 @@ export class ScraperService {
             $('.c-stat-compare').eq(1).find('.c-stat-compare__number').first().text().trim()
         ) || null;
 
-        // Wins by method: .c-stat-area__list-item contains label + value
-        const getWinMethod = (labelText: string): number => {
-            let result = 0;
-            $('.c-stat-area__list-item').each((_, el) => {
-                const label = $(el).find('.c-stat-area__list-label').text().trim().toLowerCase();
-                if (label.includes(labelText.toLowerCase())) {
-                    result = parseInt($(el).find('.c-stat-area__list-text').text().trim()) || 0;
-                    return false; // break
-                }
-            });
-            return result;
-        };
-
-        const winsByKo = getWinMethod('KO') || getWinMethod('knockout');
-        const winsBySub = getWinMethod('Sub') || getWinMethod('soumission');
-        const winsByDec = getWinMethod('Dec');
-
-        // Image
+        // Image — new: img.hero-profile__image / fallback: img.c-hero__image
         const imageSrc =
+            $('img.hero-profile__image').attr('src') ||
             $('img.c-hero__image').attr('src') ||
             $('.hero-profile__image img').attr('src') ||
             null;
 
-        this.logger.log(`Scraped fighter ${name}: ${wins}-${losses}-${draws}`);
+        this.logger.log(`Scraped fighter ${name}: ${wins}-${losses}-${draws}${noContests ? `, ${noContests} NC` : ''}`);
 
         return {
             id: slug,
@@ -240,15 +259,16 @@ export class ScraperService {
             winsByKo,
             winsBySub,
             winsByDec,
-            height,
-            weight,
-            reach,
-            stance,
+            height: height || null,
+            weight: weight || null,
+            reach: reach || null,
+            stance: stance || null,
             sigStrikesLandedPerMin,
             takedownAvg,
             imagePath: imageSrc ?? '',
         };
     }
+
 
     async downloadImage(url: string, slug: string): Promise<string | null> {
         try {
@@ -292,7 +312,7 @@ export class ScraperService {
                 'Sec-Fetch-Site': 'none',
                 'Sec-Fetch-User': '?1',
                 'Cache-Control': 'max-age=0',
-                'Cookie': 'preferredLanguage=en; language=en-US; ufc_locale=en',
+                'Cookie': 'STYXKEY_region=CANADA_FRENCH.CA.en-can.Default; countryCode=CA',
             }
         });
         if (!response.ok) throw new Error(`HTTP ${response.status} from ${url}`);

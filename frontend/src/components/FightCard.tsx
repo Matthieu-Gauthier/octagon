@@ -16,6 +16,57 @@ const METHODS: { value: Method; short: string; icon: string; label: string }[] =
     { value: "DECISION", short: "DEC", icon: "📋", label: "Decision" },
 ];
 
+// ============================================================================
+// Unified Win Methods Breakdown Widget (both fighters side-by-side)
+// ============================================================================
+type WinsBreakdownProps = {
+    fighterA: { winsByKo?: number; winsByDec?: number; winsBySub?: number };
+    fighterB: { winsByKo?: number; winsByDec?: number; winsBySub?: number };
+};
+function WinsBreakdown({ fighterA, fighterB }: WinsBreakdownProps) {
+    const totalA = (fighterA.winsByKo ?? 0) + (fighterA.winsByDec ?? 0) + (fighterA.winsBySub ?? 0);
+    const totalB = (fighterB.winsByKo ?? 0) + (fighterB.winsByDec ?? 0) + (fighterB.winsBySub ?? 0);
+    if (totalA === 0 && totalB === 0) return null;
+
+    const pct = (n: number, total: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+
+    const rows = [
+        { label: 'KO/TKO', a: fighterA.winsByKo ?? 0, b: fighterB.winsByKo ?? 0 },
+        { label: 'DEC', a: fighterA.winsByDec ?? 0, b: fighterB.winsByDec ?? 0 },
+        { label: 'SUB', a: fighterA.winsBySub ?? 0, b: fighterB.winsBySub ?? 0 },
+    ];
+
+    return (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+            <div className="flex flex-col items-center gap-1">
+                {/* Title */}
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">
+                    Wins by Method
+                </span>
+                {/* Rows */}
+                {rows.map(({ label, a, b }) => (
+                    <div key={label} className="flex items-center gap-0">
+                        {/* Left — red corner */}
+                        <div className="flex items-center justify-end gap-1 w-16">
+                            <span className="text-[10px] text-zinc-500">({pct(a, totalA)}%)</span>
+                            <span className="text-[11px] font-bold font-mono text-white/80">{a}</span>
+                        </div>
+                        {/* Label */}
+                        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 w-14 text-center">
+                            {label}
+                        </span>
+                        {/* Right — blue corner */}
+                        <div className="flex items-center gap-1 w-16">
+                            <span className="text-[11px] font-bold font-mono text-white/80">{b}</span>
+                            <span className="text-[10px] text-zinc-500">({pct(b, totalB)}%)</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export interface FightCardPick {
     winnerId: string;
     method?: Method;
@@ -202,6 +253,9 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
 
             {/* Fighters Area */}
             <div className={cn("grid grid-cols-2 relative transition-all", heightClass)}>
+                {/* Unified win stats widget */}
+                <WinsBreakdown fighterA={fight.fighterA} fighterB={fight.fighterB} />
+
                 {/* Fighter A */}
                 {/* Fighter A */}
                 <FighterPortrait
@@ -218,7 +272,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                         !winner && "grayscale"
                     )}
                 >
-                    <div className="absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none">
+                    <div className={cn("absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none", winner === fight.fighterA.id && "bg-gradient-to-t from-red-950/80 via-red-950/40 to-transparent")}>
                         <div className="transition-transform duration-300 origin-bottom-left group-hover:scale-105 mb-1">
                             {winner === fight.fighterA.id && (
                                 <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
@@ -262,7 +316,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                         !winner && "grayscale"
                     )}
                 >
-                    <div className="absolute bottom-0 right-0 w-full p-4 pb-4 text-right bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent flex flex-col justify-end h-full pointer-events-none">
+                    <div className={cn("absolute bottom-0 right-0 w-full p-4 pb-4 text-right flex flex-col justify-end h-full pointer-events-none", winner === fight.fighterB.id && "bg-gradient-to-t from-blue-950/80 via-blue-950/40 to-transparent")}>
                         <div className="flex flex-col items-end transition-transform duration-300 origin-bottom-right group-hover:scale-105 mb-1">
                             {winner === fight.fighterB.id && (
                                 <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
