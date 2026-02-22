@@ -40,6 +40,9 @@ function AppContent() {
             </Badge>
           </div>
 
+          {/* Portal Target for dynamic page headers */}
+          <div id="header-center-portal" className="flex-1 flex justify-center items-center px-4 overflow-hidden" />
+
           <div className="flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-2">

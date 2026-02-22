@@ -10,6 +10,7 @@ export type FightStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED';
 export interface Fighter {
     id: string;
     name: string;
+    hometown?: string;
     // Stats from Prisma (all optional — may not be populated yet)
     wins?: number;
     losses?: number;
@@ -54,6 +55,7 @@ export interface Event {
     fights?: Fight[];
     prelimsStartAt?: string | null;   // from #prelims-card data-timestamp
     mainCardStartAt?: string | null;  // from #main-card data-timestamp
+    eventImg?: string | null;
 }
 
 // Alias kept for backward compat with components using UfcEvent

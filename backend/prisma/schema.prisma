@@ -63,6 +63,7 @@ model Event {
   status          String            // SCHEDULED, LIVE, FINISHED
   prelimsStartAt  DateTime?         // scraped from #prelims-card data-timestamp
   mainCardStartAt DateTime?         // scraped from #main-card data-timestamp
+  eventImg        String?           // scraped from c-hero__image src
 
   fights    Fight[]
 
@@ -87,6 +88,7 @@ model Fighter {
   sigStrikesLandedPerMin Float?
   takedownAvg Float?
   imagePath String?  // Local asset path
+  hometown  String?  // scraped from bio section for flag mapping
   
   fightsA   Fight[]  @relation("FighterA")
   fightsB   Fight[]  @relation("FighterB")

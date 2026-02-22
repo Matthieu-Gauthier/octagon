@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Check, ChevronLeft, RotateCcw, Flame, Shield, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FighterPortrait } from "./FighterPortrait";
+import { getFlagForHometown } from "@/lib/flags";
 
 // ============================================================================
 // Types
@@ -356,8 +357,12 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             {winner === fight.fighterA.id && (
                                 <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
                             )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
-                                {fight.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
+                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto relative">
+                                {fight.fighterA.name.split(" ").map((n, i) => (
+                                    <span key={i} className="block relative">
+                                        {n}
+                                    </span>
+                                ))}
                             </h3>
                             <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.wins}-{fight.fighterA.losses}-{fight.fighterA.noContests}</p>
                             {winner === fight.fighterA.id && isComplete && (
@@ -373,10 +378,22 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 {/* VS Badge */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
                     <div className={cn(
-                        "flex items-center justify-center w-8 h-8 rounded-full font-black italic text-xs transition-all shadow-2xl duration-500",
-                        winner ? "bg-zinc-900 text-zinc-600 scale-75 border border-zinc-700" : "bg-white text-black scale-100 border-2 border-zinc-950"
+                        "flex items-center justify-center transition-all shadow-2xl duration-500 relative",
+                        (getFlagForHometown(fight.fighterA.hometown) || getFlagForHometown(fight.fighterB.hometown))
+                            ? cn("bg-zinc-950/80 backdrop-blur-md rounded-[12px] px-2 py-1.5 gap-1.5", winner ? "scale-[0.85] opacity-60 grayscale-[0.8]" : "scale-100")
+                            : cn("rounded-full w-8 h-8", winner ? "scale-75 opacity-50 border border-zinc-700 bg-zinc-900 text-zinc-600" : "bg-white text-black border-2 border-zinc-950 scale-100")
                     )}>
-                        <span className="-ml-0.5 mt-0.5">VS</span>
+                        {getFlagForHometown(fight.fighterA.hometown) && (
+                            <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterA.hometown)}.png`} alt="flag" className="w-[28px] h-[20px] rounded-[3px] object-cover shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+                        )}
+                        {(getFlagForHometown(fight.fighterA.hometown) || getFlagForHometown(fight.fighterB.hometown)) ? (
+                            <span className="font-black italic text-[9px] text-zinc-500">VS</span>
+                        ) : (
+                            <span className="font-black italic text-xs -ml-0.5 mt-0.5">VS</span>
+                        )}
+                        {getFlagForHometown(fight.fighterB.hometown) && (
+                            <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterB.hometown)}.png`} alt="flag" className="w-[28px] h-[20px] rounded-[3px] object-cover shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
+                        )}
                     </div>
                 </div>
 
@@ -400,8 +417,12 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             {winner === fight.fighterB.id && (
                                 <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
                             )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
-                                {fight.fighterB.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
+                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto relative text-right">
+                                {fight.fighterB.name.split(" ").map((n, i) => (
+                                    <span key={i} className="block relative">
+                                        {n}
+                                    </span>
+                                ))}
                             </h3>
                             <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.wins}-{fight.fighterB.losses}-{fight.fighterB.noContests}</p>
                             {winner === fight.fighterB.id && isComplete && (

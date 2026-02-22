@@ -67,6 +67,7 @@ export class EventsService {
                 status: event.status,
                 prelimsStartAt: event.prelimsStartAt ?? null,
                 mainCardStartAt: event.mainCardStartAt ?? null,
+                eventImg: event.eventImg ?? null,
             },
             create: event,
         });
@@ -90,6 +91,7 @@ export class EventsService {
                     stance: fighter.stance,
                     sigStrikesLandedPerMin: fighter.sigStrikesLandedPerMin,
                     takedownAvg: fighter.takedownAvg,
+                    hometown: fighter.hometown ?? null,
                     // Only overwrite imagePath if not null, or always overwrite
                     ...(fighter.imagePath ? { imagePath: fighter.imagePath } : {}),
                 },

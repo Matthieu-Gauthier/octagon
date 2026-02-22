@@ -21,6 +21,7 @@ export interface ScrapedFighter {
     sigStrikesLandedPerMin: number | null;
     takedownAvg: number | null;
     imagePath: string | null;
+    hometown?: string;
 }
 
 export interface ScrapedFight {
@@ -44,6 +45,7 @@ export interface ScrapedEvent {
     status: string;
     prelimsStartAt?: Date;    // scraped from #prelims-card .c-event-fight-card-broadcaster__time[data-timestamp]
     mainCardStartAt?: Date;   // scraped from #main-card .c-event-fight-card-broadcaster__time[data-timestamp]
+    eventImg?: string;
 }
 
 export interface ScrapedEventData {
@@ -85,6 +87,8 @@ export class ScraperService {
             const eventDate = timestamp ? new Date(parseInt(timestamp) * 1000) : new Date();
             const location = $ev('.c-hero__headline-suffix').text().trim() || 'Unknown';
 
+            const eventImg = $ev('.c-hero__image picture img').attr('src');
+
             const event: ScrapedEvent = {
                 id: eventSlug ?? 'Unknown',
                 name: (eventName || eventSlug?.replace(/-/g, ' ').toUpperCase()) ?? 'Unknown',
@@ -93,6 +97,7 @@ export class ScraperService {
                 status: 'SCHEDULED',
                 prelimsStartAt: this.extractSectionTimestamp($ev, '#prelims-card'),
                 mainCardStartAt: this.extractSectionTimestamp($ev, '#main-card'),
+                eventImg,
             };
 
             const fights: ScrapedFight[] = [];
@@ -227,6 +232,15 @@ export class ScraperService {
             $('div.field--name-gt-stance .field__item').first().text().trim() ||
             getBioStat('stance') || getBioStat('posture') || getBioStat('position') || null;
 
+        let hometown: string | null = null;
+        $('.c-bio__field').each((_, el) => {
+            const label = $(el).find('.c-bio__label').text().trim().toLowerCase();
+            if (label === 'hometown' || label === 'ville d\'origine') {
+                hometown = $(el).find('.c-bio__text').text().trim() || null;
+                return false; // break
+            }
+        });
+
         // Win methods — section .c-stat-3bar, labels: KO/TKO, DÉC/DEC, SOU/SUB
         // Values format: "10 (28%)" — extract leading number only
         const getWinMethod = (labels: string[]): number => {
@@ -282,6 +296,7 @@ export class ScraperService {
             sigStrikesLandedPerMin,
             takedownAvg,
             imagePath: imageSrc ?? '',
+            hometown: hometown || undefined,
         };
     }
 

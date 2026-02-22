@@ -1,10 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { useLeague, useLeagueStandings } from "@/hooks/useLeagues";
 import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
-import { Fight, Bet, BetDTO } from "@/types/api";
+import { Fight, Bet, BetDTO, Event as ApiEvent } from "@/types/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Copy, Trophy, ChevronRight, ChevronLeft, MapPin, Target, Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { useEvents } from "@/hooks/useEvents";
 import { useBets, usePlaceBet, useRemoveBet } from "@/hooks/useBets";
 import { useAuth } from "@/context/AuthContext";
 import { useGameRealtime } from "@/hooks/useGameRealtime";
+import { createPortal } from "react-dom";
 
 
 // ============================================================================
@@ -58,7 +60,117 @@ function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, 
 // ============================================================================
 // Main — Fight Night Hub (Unified View)
 // ============================================================================
+// Event Hero Banner (Extracted for performance)
+// ============================================================================
+function EventHeroBanner({ events, safeEventIdx, setEventIdx, isFinished }: { events: ApiEvent[]; safeEventIdx: number; setEventIdx: (idx: number) => void; isFinished: boolean }) {
+    const event = events[safeEventIdx];
 
+    return (
+        <div
+            className="rounded-2xl bg-zinc-950 border border-zinc-800 relative z-10 w-full overflow-hidden h-64 sm:h-80"
+        >
+            {event.eventImg ? (
+                <div className="absolute inset-0 w-full h-full flex justify-center items-center pointer-events-none">
+                    <img
+                        src={event.eventImg}
+                        alt={event.name}
+                        className="w-full mix-blend-screen opacity-70 object-cover"
+                    />
+                    <div
+                        className="absolute inset-0 z-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent"
+                    />
+                </div>
+            ) : (
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-900/50 to-zinc-950 z-0 pointer-events-none" />
+            )}
+
+            <div
+                className="relative z-20 w-full h-full flex justify-between p-6 sm:p-8 items-end"
+            >
+                {/* Prev Button */}
+                <button
+                    onClick={() => setEventIdx(Math.max(0, safeEventIdx - 1))}
+                    disabled={safeEventIdx === 0}
+                    className="hidden sm:flex flex-col items-start gap-1 p-3 rounded-lg bg-zinc-950/40 hover:bg-zinc-900/80 backdrop-blur-sm border border-transparent hover:border-zinc-700 disabled:opacity-30 disabled:hover:bg-transparent text-left group transition-all"
+                >
+                    <div className="flex items-center gap-1 text-zinc-400 group-hover:text-white transition-colors">
+                        <ChevronLeft className="h-5 w-5" />
+                        <span className="text-xs uppercase font-extrabold tracking-wider">Previous</span>
+                    </div>
+                    {safeEventIdx > 0 && (
+                        <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
+                            {events[safeEventIdx - 1]?.name.split(":")[0]}
+                        </span>
+                    )}
+                </button>
+
+                {/* Mobile Prev */}
+                <button
+                    onClick={() => setEventIdx(Math.max(0, safeEventIdx - 1))}
+                    disabled={safeEventIdx === 0}
+                    className="sm:hidden p-2.5 rounded-full bg-zinc-950/60 backdrop-blur-md border border-zinc-700 disabled:opacity-30 text-white"
+                >
+                    <ChevronLeft className="h-5 w-5" />
+                </button>
+
+                {/* Center Content */}
+                <div
+                    className="text-center flex flex-col items-center justify-center flex-1 h-full max-w-[60%] mt-auto"
+                >
+                    {isFinished ? (
+                        <Badge variant="outline" className="bg-zinc-800/80 text-zinc-400 border-zinc-700 backdrop-blur-md shadow-lg shadow-black/50 mb-2">COMPLETED</Badge>
+                    ) : (
+                        <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30 backdrop-blur-md shadow-lg shadow-black/50 mb-2">LIVE NOW</Badge>
+                    )}
+
+                    <h2
+                        className="font-black italic tracking-tighter uppercase drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)] w-full text-2xl sm:text-4xl leading-tight"
+                    >
+                        {event.name.split(":")[0]}
+                    </h2>
+                    <p
+                        className="text-zinc-300 font-medium drop-shadow-md w-full text-sm sm:text-base mt-2"
+                    >
+                        {event.name.split(":")[1]?.trim()}
+                    </p>
+
+                    <div className="items-center justify-center gap-3 text-xs text-zinc-500 flex pt-3">
+                        <div className="flex items-center gap-1 whitespace-nowrap">
+                            <MapPin className="h-3 w-3" />
+                            <span>{event.location}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Next Button */}
+                <button
+                    onClick={() => setEventIdx(Math.min(events.length - 1, safeEventIdx + 1))}
+                    disabled={safeEventIdx === events.length - 1}
+                    className="hidden sm:flex flex-col items-end gap-1 p-3 rounded-lg bg-zinc-950/40 hover:bg-zinc-900/80 backdrop-blur-sm border border-transparent hover:border-zinc-700 disabled:opacity-30 disabled:hover:bg-transparent text-right group transition-all"
+                >
+                    <div className="flex items-center gap-1 text-zinc-400 group-hover:text-white transition-colors">
+                        <span className="text-xs uppercase font-extrabold tracking-wider">Next</span>
+                        <ChevronRight className="h-5 w-5" />
+                    </div>
+                    {safeEventIdx < events.length - 1 && (
+                        <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
+                            {events[safeEventIdx + 1]?.name.split(":")[0]}
+                        </span>
+                    )}
+                </button>
+
+                {/* Mobile Next */}
+                <button
+                    onClick={() => setEventIdx(Math.min(events.length - 1, safeEventIdx + 1))}
+                    disabled={safeEventIdx === events.length - 1}
+                    className="sm:hidden p-2.5 rounded-full bg-zinc-950/60 backdrop-blur-md border border-zinc-700 disabled:opacity-30 text-white"
+                >
+                    <ChevronRight className="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+    );
+}
 
 export function LeagueDashboard() {
     const { leagueId } = useParams();
@@ -83,10 +195,7 @@ export function LeagueDashboard() {
 
     // Default to last event if available, otherwise 0
     const [eventIdx, setEventIdx] = useState(0);
-
     const [showAllStandings, setShowAllStandings] = useState(false);
-    const [mainCardOpen, setMainCardOpen] = useState(true);
-    const [prelimsOpen, setPrelimsOpen] = useState(false);
 
     if (eventsLoading || leagueLoading) {
         return <EventSkeleton />;
@@ -180,113 +289,34 @@ export function LeagueDashboard() {
     const visibleStandings = showAllStandings ? standings : standings.slice(0, 5);
     const hasMoreStandings = standings.length > 5;
 
+    const portalTarget = document.getElementById("header-center-portal");
+
     return (
         <div className="space-y-6 max-w-4xl mx-auto">
-            {/* League Header */}
-            <div className="flex items-center gap-4">
-                <Link to="/leagues">
-                    <Button variant="ghost" size="icon">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
-                <div>
-                    <h1 className="text-3xl font-extrabold tracking-tight">{league.name}</h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="text-muted-foreground text-sm">{league.members?.length || 0} members</span>
-                        <span className="text-muted-foreground">·</span>
-                        <Badge variant="outline" className="font-mono text-xs cursor-pointer hover:bg-muted" onClick={copyCode}>
+            {/* League Header Portal */}
+            {portalTarget && createPortal(
+                <div className="flex items-center gap-3 animate-in fade-in slide-in-from-top-2 mx-auto overflow-hidden">
+                    <Link to="/leagues" className="hidden sm:block">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                            <ArrowLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    <div className="flex items-center gap-2 max-w-[200px] sm:max-w-[400px]">
+                        <h1 className="text-base sm:text-xl font-extrabold tracking-tight truncate">{league.name}</h1>
+                        <Badge variant="outline" className="font-mono text-[10px] hidden md:inline-flex cursor-pointer hover:bg-muted shrink-0" onClick={copyCode}>
                             {league.code} <Copy className="ml-1 h-3 w-3 inline" />
                         </Badge>
-                        <span className="text-muted-foreground">·</span>
                     </div>
-                </div>
-            </div>
+                </div>,
+                portalTarget
+            )}
 
-            {/* 🏟️ Event Hero Banner (Enhanced) */}
-            <div className="relative overflow-hidden rounded-2xl bg-zinc-950 border border-zinc-800 p-6 sm:p-10">
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-900/50 to-zinc-950 z-0" />
-
-                <div className="relative z-10 flex items-center justify-between">
-                    {/* Prev Button */}
-                    <button
-                        onClick={() => setEventIdx(Math.max(0, safeEventIdx - 1))}
-                        disabled={safeEventIdx === 0}
-                        className="hidden sm:flex flex-col items-start gap-1 p-2 rounded-lg hover:bg-zinc-900/50 disabled:opacity-30 disabled:hover:bg-transparent text-left group transition-colors"
-                    >
-                        <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                            <ChevronLeft className="h-4 w-4" />
-                            <span className="text-[10px] uppercase font-bold tracking-wider">Previous</span>
-                        </div>
-                        {safeEventIdx > 0 && (
-                            <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
-                                {events[safeEventIdx - 1]?.name.split(":")[0]}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Mobile Prev */}
-                    <button
-                        onClick={() => setEventIdx(Math.max(0, safeEventIdx - 1))}
-                        disabled={safeEventIdx === 0}
-                        className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800 disabled:opacity-30"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </button>
-
-                    {/* Center Content */}
-                    <div className="text-center space-y-2">
-                        {isFinished ? (
-                            <Badge variant="outline" className="mb-2 bg-zinc-800/50 text-zinc-500 border-zinc-700">COMPLETED</Badge>
-                        ) : (
-                            <Badge variant="outline" className="mb-2 bg-red-500/10 text-red-500 border-red-500/20">LIVE NOW</Badge>
-                        )}
-
-                        <h2 className="text-3xl sm:text-5xl font-black italic tracking-tighter uppercase">
-                            {event.name.split(":")[0]}
-                        </h2>
-                        <p className="text-zinc-400 font-medium text-sm sm:text-base">
-                            {event.name.split(":")[1]?.trim()}
-                        </p>
-
-                        <div className="flex items-center justify-center gap-3 text-xs text-zinc-500 pt-2">
-                            <span className="font-semibold text-zinc-400">
-                                {new Date(event.date).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
-                            </span>
-                            <span>·</span>
-                            <div className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                <span>{event.location}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Next Button */}
-                    <button
-                        onClick={() => setEventIdx(Math.min(events.length - 1, safeEventIdx + 1))}
-                        disabled={safeEventIdx === events.length - 1}
-                        className="hidden sm:flex flex-col items-end gap-1 p-2 rounded-lg hover:bg-zinc-900/50 disabled:opacity-30 disabled:hover:bg-transparent text-right group transition-colors"
-                    >
-                        <div className="flex items-center gap-1 text-zinc-500 group-hover:text-zinc-300 transition-colors">
-                            <span className="text-[10px] uppercase font-bold tracking-wider">Next</span>
-                            <ChevronRight className="h-4 w-4" />
-                        </div>
-                        {safeEventIdx < events.length - 1 && (
-                            <span className="text-xs font-bold text-zinc-600 group-hover:text-zinc-400">
-                                {events[safeEventIdx + 1]?.name.split(":")[0]}
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Mobile Next */}
-                    <button
-                        onClick={() => setEventIdx(Math.min(events.length - 1, safeEventIdx + 1))}
-                        disabled={safeEventIdx === events.length - 1}
-                        className="sm:hidden p-2 rounded-full bg-zinc-900 border border-zinc-800 disabled:opacity-30"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </button>
-                </div>
-            </div>
+            <EventHeroBanner
+                events={events}
+                safeEventIdx={safeEventIdx}
+                setEventIdx={setEventIdx}
+                isFinished={isFinished}
+            />
 
             {/* Stat Cards */}
             {hasStarted && myStanding && (
@@ -501,107 +531,85 @@ export function LeagueDashboard() {
                 </div>
             )}
 
-            {/* ===== MAIN CARD (collapsible) ===== */}
-            <div>
-                <button
-                    onClick={() => setMainCardOpen(!mainCardOpen)}
-                    className={cn(
-                        "w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl cursor-pointer transition-all",
-                        mainCardOpen
-                            ? "bg-gradient-to-r from-red-600/10 to-transparent border border-red-500/20"
-                            : "bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700"
-                    )}
-                >
-                    <div className={cn("w-1.5 h-1.5 rounded-full", mainCardOpen ? "bg-red-500" : "bg-zinc-700")} />
-                    <span className={cn("text-sm font-bold uppercase tracking-wide", mainCardOpen ? "text-zinc-100" : "text-zinc-500")}>
-                        Main Card
-                    </span>
-                    <span className={cn(
-                        "text-[10px] font-medium px-2 py-0.5 rounded-full",
-                        mainCardOpen ? "bg-red-600/25 text-red-400 border border-red-500/20" : "bg-zinc-800 text-zinc-600"
-                    )}>{mainCardFights.length} fights</span>
-                    <div className="flex-1" />
-                    {hasStarted && (
-                        <div className="flex items-center gap-2">
-                            <span className="flex items-center gap-1 text-[10px] text-zinc-500">
-                                <Target className="h-3 w-3" />{mainStats.correct}/{mainStats.total}
-                            </span>
-                            <span className="flex items-center gap-1 text-[10px] font-bold text-yellow-500">
-                                <Trophy className="h-3 w-3" />{mainStats.points}pts
-                            </span>
+            {/* ===== FIGHT CARDS (TABS) ===== */}
+            <Tabs defaultValue="main" className="w-full">
+                <TabsList className="w-full flex bg-transparent border-b border-zinc-800/50 p-0 rounded-none h-auto">
+                    <TabsTrigger
+                        value="main"
+                        className="flex-1 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-red-500 data-[state=active]:shadow-none data-[state=inactive]:opacity-60 border-b-2 border-transparent rounded-none py-4 transition-all"
+                    >
+                        <div className="flex flex-col items-center gap-1.5">
+                            <span className="font-bold uppercase tracking-widest text-xs">Main Card</span>
+                            <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-medium text-zinc-400">
+                                <span>{mainCardFights.length} fights</span>
+                                {hasStarted && (
+                                    <>
+                                        <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                                        <div className="flex items-center gap-2">
+                                            <span className="flex items-center gap-1"><Target className="h-3 w-3" />{mainStats.correct}/{mainStats.total}</span>
+                                            <span className="flex items-center gap-1 text-yellow-500"><Trophy className="h-3 w-3" />{mainStats.points}</span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
                         </div>
+                    </TabsTrigger>
+                    {prelimFights.length > 0 && (
+                        <TabsTrigger
+                            value="prelims"
+                            className="flex-1 data-[state=active]:bg-transparent data-[state=active]:text-white data-[state=active]:border-red-500 data-[state=active]:shadow-none data-[state=inactive]:opacity-60 border-b-2 border-transparent rounded-none py-4 transition-all"
+                        >
+                            <div className="flex flex-col items-center gap-1.5">
+                                <span className="font-bold uppercase tracking-widest text-xs">Prelims</span>
+                                <div className="flex items-center justify-center gap-2 sm:gap-3 text-[10px] font-medium text-zinc-400">
+                                    <span>{prelimFights.length} fights</span>
+                                    {hasStarted && (
+                                        <>
+                                            <span className="w-1 h-1 rounded-full bg-zinc-800" />
+                                            <div className="flex items-center gap-2">
+                                                <span className="flex items-center gap-1"><Target className="h-3 w-3" />{prelimsStats.correct}/{prelimsStats.total}</span>
+                                                <span className="flex items-center gap-1 text-yellow-500"><Trophy className="h-3 w-3" />{prelimsStats.points}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </TabsTrigger>
                     )}
-                    <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", mainCardOpen ? "rotate-90 text-red-400" : "text-zinc-600")} />
-                </button>
-                {mainCardOpen && (
-                    <div className="space-y-4 mt-3 animate-in fade-in">
-                        {mainCardFights.map(fight => (
+                </TabsList>
+
+                <TabsContent value="main" className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {mainCardFights.map(fight => (
+                        <LeagueFightCard
+                            key={fight.id}
+                            fight={fight}
+                            leagueId={league.id}
+                            locked={locked || fight.status === "FINISHED"}
+                            lockAt={fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt}
+                            myBets={myBets || []}
+                            onPlaceBet={placeBet}
+                            onRemoveBet={removeBet}
+                        />
+                    ))}
+                </TabsContent>
+
+                {prelimFights.length > 0 && (
+                    <TabsContent value="prelims" className="mt-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {prelimFights.map(fight => (
                             <LeagueFightCard
                                 key={fight.id}
                                 fight={fight}
                                 leagueId={league.id}
                                 locked={locked || fight.status === "FINISHED"}
-                                lockAt={fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt}
+                                lockAt={(fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt) || event.date}
                                 myBets={myBets || []}
                                 onPlaceBet={placeBet}
                                 onRemoveBet={removeBet}
                             />
                         ))}
-                    </div>
+                    </TabsContent>
                 )}
-            </div>
-
-            {/* ===== PRELIMS (collapsible, closed by default) ===== */}
-            {prelimFights.length > 0 && (
-                <div>
-                    <button
-                        onClick={() => setPrelimsOpen(!prelimsOpen)}
-                        className={cn(
-                            "w-full flex items-center gap-2.5 px-4 py-2.5 rounded-xl cursor-pointer transition-all",
-                            prelimsOpen
-                                ? "bg-gradient-to-r from-red-600/10 to-transparent border border-red-500/20"
-                                : "bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700"
-                        )}
-                    >
-                        <div className={cn("w-1.5 h-1.5 rounded-full", prelimsOpen ? "bg-red-500" : "bg-zinc-700")} />
-                        <span className={cn("text-sm font-bold uppercase tracking-wide", prelimsOpen ? "text-zinc-100" : "text-zinc-500")}>
-                            Prelims
-                        </span>
-                        <span className={cn(
-                            "text-[10px] font-medium px-2 py-0.5 rounded-full",
-                            prelimsOpen ? "bg-red-600/25 text-red-400 border border-red-500/20" : "bg-zinc-800 text-zinc-600"
-                        )}>{prelimFights.length} fights</span>
-                        <div className="flex-1" />
-                        {hasStarted && (
-                            <div className="flex items-center gap-2">
-                                <span className="flex items-center gap-1 text-[10px] text-zinc-500">
-                                    <Target className="h-3 w-3" />{prelimsStats.correct}/{prelimsStats.total}
-                                </span>
-                                <span className="flex items-center gap-1 text-[10px] font-bold text-yellow-500">
-                                    <Trophy className="h-3 w-3" />{prelimsStats.points}pts
-                                </span>
-                            </div>
-                        )}
-                        <ChevronRight className={cn("h-4 w-4 transition-transform duration-200", prelimsOpen ? "rotate-90 text-red-400" : "text-zinc-600")} />
-                    </button>
-                    {prelimsOpen && (
-                        <div className="space-y-4 mt-3 animate-in fade-in">
-                            {prelimFights.map(fight => (
-                                <LeagueFightCard
-                                    key={fight.id}
-                                    fight={fight}
-                                    leagueId={league.id}
-                                    locked={locked || fight.status === "FINISHED"}
-                                    lockAt={(fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt) || event.date}
-                                    myBets={myBets || []}
-                                    onPlaceBet={placeBet}
-                                    onRemoveBet={removeBet}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+            </Tabs>
         </div>
     );
 }
