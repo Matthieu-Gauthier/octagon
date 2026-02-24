@@ -63,7 +63,7 @@ export class LeaguesController {
 
     @Get(':id/bets')
     @UseGuards(SupabaseGuard)
-    async getLeagueBets(@Param('id') id: string, @Request() req: any) {
-        return this.betsService.findLeagueBets(id, req.user.sub);
+    async getLeagueBets(@Param('id') id: string) {
+        return this.betsService.findLeagueBets(id);
     }
 }

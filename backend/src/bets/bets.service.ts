@@ -64,8 +64,8 @@ export class BetsService {
         });
     }
 
-    async findLeagueBets(leagueId: string, userId: string) {
-        return this.prisma.bet.findMany({ where: { leagueId, userId } });
+    async findLeagueBets(leagueId: string) {
+        return this.prisma.bet.findMany({ where: { leagueId } });
     }
 
     async remove(betId: string, userId: string) {

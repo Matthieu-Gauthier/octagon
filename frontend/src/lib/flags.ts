@@ -59,6 +59,17 @@ export const countryFlags: Record<string, { name: string; code: string }> = {
     'jamaica': { name: 'Jamaica', code: 'jm' },
     'venezuela': { name: 'Venezuela', code: 've' },
     'belarus': { name: 'Belarus', code: 'by' },
+    'slovenia': { name: 'Slovenia', code: 'si' },
+    'portugal': { name: 'Portugal', code: 'pt' },
+    'greece': { name: 'Greece', code: 'gr' },
+    'angola': { name: 'Angola', code: 'ao' },
+    'egypt': { name: 'Egypt', code: 'eg' },
+    'afghanistan': { name: 'Afghanistan', code: 'af' },
+    'iraq': { name: 'Iraq', code: 'iq' },
+    'iran': { name: 'Iran', code: 'ir' },
+    'dr congo': { name: 'DR Congo', code: 'cd' },
+    'democratic republic of the congo': { name: 'DR Congo', code: 'cd' },
+    'congo': { name: 'Congo', code: 'cg' },
 };
 
 /**

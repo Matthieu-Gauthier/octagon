@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, X, ChevronLeft, RotateCcw, Flame, Shield } from "lucide-react";
+import { Check, X, ChevronLeft, ChevronRight, Target, RotateCcw, Flame, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // ============================================================================
@@ -552,6 +552,361 @@ export function FightCardShowcase() {
                     </div>
                     <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
                         <ShowcaseCard height="h-[400px]" eventType="standard" selectionVariant="bottom-drawer" customFight={fightNoImages} />
+                    </div>
+                </section>
+            </div>
+
+            {/* ── SECTION 3: MY PICKS SUMMARY VARIANTS ── */}
+            <div className="space-y-12">
+                <div className="flex items-center justify-center pt-8">
+                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                    <span className="px-4 text-zinc-500 font-mono text-xs uppercase tracking-widest whitespace-nowrap">My Picks Summary Variants</span>
+                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                </div>
+
+                {/* Variant 1: Current Compact Table */}
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded">V1</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Current (Compact Table)</h3>
+                            <p className="text-xs text-zinc-500">The current dense data table view.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl bg-zinc-950/50 p-4">
+                        <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-950">
+                            <div className="w-full flex items-center gap-3 px-3 py-2.5 bg-zinc-900/50 border-b border-zinc-800">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">My Picks</span>
+                                <div className="flex-1" />
+                                <span className="text-xs font-black text-yellow-500">45</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-2 text-[8px] font-bold uppercase tracking-wider text-zinc-700 border-b border-zinc-800/50">
+                                <span className="w-2" />
+                                <span className="w-24">Fight</span>
+                                <span className="flex-1">Result</span>
+                                <span className="flex-1 text-blue-400/80">Choice</span>
+                                <span className="w-8 text-right">Pts</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-zinc-800/50 hover:bg-zinc-800/30 transition-colors">
+                                <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                                <span className="text-xs font-bold text-zinc-300 w-24 truncate">Strickland</span>
+                                <span className="flex-1 text-zinc-500 text-[9px] truncate">Strickland (DEC)</span>
+                                <span className="flex-1 text-blue-300/80 text-[9px] truncate font-bold">Strickland (DEC)</span>
+                                <span className="font-black text-sm text-yellow-500 w-8 text-right">15</span>
+                            </div>
+                            <div className="flex items-center gap-2 px-3 py-2.5 hover:bg-zinc-800/30 transition-colors">
+                                <div className="w-2 h-2 rounded-full bg-red-500/50 shrink-0" />
+                                <span className="text-xs font-bold text-zinc-300 w-24 truncate">Hernandez</span>
+                                <span className="flex-1 text-zinc-500 text-[9px] truncate">Hernandez (SUB R2)</span>
+                                <span className="flex-1 text-blue-300/80 text-[9px] truncate font-bold">Strickland (KO R1)</span>
+                                <span className="font-black text-sm text-zinc-600 w-8 text-right">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Variant 2: Card Grid */}
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-emerald-600 text-white text-xs font-bold px-2.5 py-1 rounded">V2</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Card Grid</h3>
+                            <p className="text-xs text-zinc-500">Visual grid of picks, emphasizes fighters.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl bg-zinc-950/50 p-4">
+                        <div className="rounded-xl border border-zinc-800 overflow-hidden bg-zinc-950 p-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">My Picks</span>
+                                <span className="text-lg font-black text-yellow-500">45 PTS</span>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                {/* Correct Pick */}
+                                <div className="bg-zinc-900 border border-green-500/30 rounded-xl p-3 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-8 h-8 bg-green-500/20 rounded-bl-xl flex items-center justify-center">
+                                        <Check className="w-4 h-4 text-green-500" />
+                                    </div>
+                                    <p className="text-[9px] uppercase font-bold text-zinc-500 mb-1">Middleweight</p>
+                                    <h4 className="font-black text-white text-sm">Strickland</h4>
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex justify-between text-[10px]">
+                                            <span className="text-zinc-500">Choice:</span>
+                                            <span className="font-bold text-blue-400">DEC</span>
+                                        </div>
+                                        <div className="flex justify-between text-[10px]">
+                                            <span className="text-zinc-500">Result:</span>
+                                            <span className="font-bold text-zinc-300">DEC</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-zinc-800 flex justify-between items-center">
+                                        <span className="text-[10px] font-bold text-green-500">+15 Pts</span>
+                                    </div>
+                                </div>
+                                {/* Incorrect Pick */}
+                                <div className="bg-zinc-900 border border-red-500/30 rounded-xl p-3 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-8 h-8 bg-red-500/10 rounded-bl-xl flex items-center justify-center">
+                                        <X className="w-4 h-4 text-red-500/50" />
+                                    </div>
+                                    <p className="text-[9px] uppercase font-bold text-zinc-500 mb-1">Lightweight</p>
+                                    <h4 className="font-black text-white text-sm">Hernandez</h4>
+                                    <div className="mt-2 space-y-1">
+                                        <div className="flex justify-between text-[10px]">
+                                            <span className="text-zinc-500">Choice:</span>
+                                            <span className="font-bold text-blue-400">KO R1</span>
+                                        </div>
+                                        <div className="flex justify-between text-[10px]">
+                                            <span className="text-zinc-500">Result:</span>
+                                            <span className="font-bold text-zinc-300">SUB R2</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-3 pt-2 border-t border-zinc-800 flex justify-between items-center">
+                                        <span className="text-[10px] font-bold text-zinc-600">0 Pts</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Variant 3a: Compact Timeline Feed (Stacked, No Red/Blue for results) */}
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-amber-600 text-white text-xs font-bold px-2.5 py-1 rounded">V3a</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Timeline (Stacked)</h3>
+                            <p className="text-xs text-zinc-500">Includes player selector. Uses Green/Orange/Gray for results to avoid Red/Blue corner confusion.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl bg-zinc-950/50 p-4 max-w-sm mx-auto">
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden">
+
+                            {/* Card Header with Player Selector */}
+                            <div className="w-full flex items-center justify-between px-3 py-2.5 bg-zinc-900/50 border-b border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                    <Target className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-300">My Picks</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-0.5 border border-zinc-800">
+                                    <button className="p-1 hover:bg-zinc-800 rounded transition-colors">
+                                        <ChevronLeft className="h-3 w-3 text-zinc-400" />
+                                    </button>
+                                    <span className="text-[9px] font-bold text-zinc-500 px-1 text-center min-w-[30px]">1 / 8</span>
+                                    <button className="p-1 hover:bg-zinc-800 rounded transition-colors">
+                                        <ChevronRight className="h-3 w-3 text-zinc-400" />
+                                    </button>
+                                </div>
+                                <span className="text-xs font-black text-yellow-500">45 PTS</span>
+                            </div>
+
+                            <div className="p-1">
+                                {/* --- MAIN CARD SECTION --- */}
+                                <div className="px-2 pt-2 pb-1">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                        <span className="text-[8px] font-bold tracking-widest text-zinc-400 uppercase">Main Card</span>
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                    </div>
+
+                                    {/* Feed Item 1 (Correct) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors border-b border-zinc-800/50 last:border-0 rounded-md">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-6 h-6 bg-zinc-900 rounded-full border border-emerald-500/50 flex items-center justify-center shrink-0">
+                                                    <span className="text-[10px]">✅</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-[11px] font-black text-white truncate">Sean Strickland</h4>
+                                                        <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900 px-1 rounded">MW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[9px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-emerald-400 font-bold truncate">Pick: <span className="text-white">DEC</span></span>
+                                                        <span className="text-zinc-600 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: DEC</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-black text-emerald-500 shrink-0">+15</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Feed Item 2 (Incorrect) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors border-b border-zinc-800/50 last:border-0 rounded-md">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-6 h-6 bg-zinc-900 rounded-full border border-zinc-500/30 flex items-center justify-center shrink-0 grayscale opacity-70">
+                                                    <span className="text-[10px]">❌</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0 opacity-80">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-[11px] font-black text-zinc-400 truncate strike-through">Anthony Hernandez</h4>
+                                                        <span className="text-[8px] font-bold text-zinc-600 bg-zinc-900 px-1 rounded">MW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[9px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-zinc-500 font-bold truncate">Pick: <span className="line-through">KO R1</span></span>
+                                                        <span className="text-zinc-700 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: SUB R2</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-black text-zinc-600 shrink-0">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* --- PRELIMS SECTION --- */}
+                                <div className="px-2 pt-2 pb-1 mt-1">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                        <span className="text-[8px] font-bold tracking-widest text-zinc-500 uppercase">Prelims</span>
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                    </div>
+
+                                    {/* Feed Item 3 (Partial) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors border-b border-zinc-800/50 last:border-0 rounded-md">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-6 h-6 bg-zinc-900 rounded-full border border-amber-500/50 flex items-center justify-center shrink-0">
+                                                    <span className="text-[10px]">⚠️</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-[11px] font-black text-white truncate">John Doe</h4>
+                                                        <span className="text-[8px] font-bold text-zinc-500 bg-zinc-900 px-1 rounded">LW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[9px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-amber-500 font-bold truncate">Pick: <span className="text-white">KO R2</span></span>
+                                                        <span className="text-zinc-600 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: KO R1</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-black text-amber-500 shrink-0">+10</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Variant 3b: Compact Timeline Feed (Side-by-Side) */}
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-orange-600 text-white text-xs font-bold px-2.5 py-1 rounded">V3b</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Timeline (Side-by-Side)</h3>
+                            <p className="text-xs text-zinc-500">Separates Main Card and Prelims horizontally for wider screens.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl bg-zinc-950/50 p-4 max-w-2xl mx-auto">
+                        <div className="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden flex flex-col">
+
+                            {/* Card Header with Player Selector */}
+                            <div className="w-full flex items-center justify-between px-4 py-3 bg-zinc-900/50 border-b border-zinc-800">
+                                <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4 text-zinc-400 shrink-0" />
+                                    <span className="text-xs font-bold uppercase tracking-widest text-zinc-300">My Picks</span>
+                                </div>
+                                <div className="flex items-center gap-1 bg-zinc-900 rounded-lg p-0.5 border border-zinc-800">
+                                    <button className="p-1.5 hover:bg-zinc-800 rounded transition-colors">
+                                        <ChevronLeft className="h-4 w-4 text-zinc-400" />
+                                    </button>
+                                    <span className="text-[10px] font-bold text-zinc-500 px-2 text-center min-w-[40px]">1 / 8</span>
+                                    <button className="p-1.5 hover:bg-zinc-800 rounded transition-colors">
+                                        <ChevronRight className="h-4 w-4 text-zinc-400" />
+                                    </button>
+                                </div>
+                                <span className="text-sm font-black text-yellow-500">45 PTS</span>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-zinc-800/50">
+                                {/* --- MAIN CARD SECTION --- */}
+                                <div className="flex-1 p-2">
+                                    <div className="flex items-center gap-2 mb-2 px-2 pt-1">
+                                        <span className="text-[9px] font-bold tracking-widest text-zinc-400 uppercase">Main Card</span>
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                    </div>
+
+                                    {/* Feed Item 1 (Correct) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors rounded-md mb-1 border border-transparent hover:border-zinc-800/50">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-7 h-7 bg-zinc-900 rounded-full border border-emerald-500/50 flex items-center justify-center shrink-0">
+                                                    <span className="text-xs">✅</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-xs font-black text-white truncate">Sean Strickland</h4>
+                                                        <span className="text-[9px] font-bold text-zinc-500 bg-zinc-900 px-1 rounded">MW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[10px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-emerald-400 font-bold truncate">Pick: <span className="text-white">DEC</span></span>
+                                                        <span className="text-zinc-600 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: DEC</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-black text-emerald-500 shrink-0">+15</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Feed Item 2 (Incorrect) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors rounded-md mb-1 border border-transparent hover:border-zinc-800/50">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-7 h-7 bg-zinc-900 rounded-full border border-zinc-500/30 flex items-center justify-center shrink-0 grayscale opacity-70">
+                                                    <span className="text-xs">❌</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0 opacity-80">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-xs font-black text-zinc-400 truncate line-through">Anthony Hernandez</h4>
+                                                        <span className="text-[9px] font-bold text-zinc-600 bg-zinc-900 px-1 rounded">MW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[10px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-zinc-500 font-bold truncate">Pick: <span className="line-through">KO R1</span></span>
+                                                        <span className="text-zinc-700 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: SUB R2</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-black text-zinc-600 shrink-0">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* --- PRELIMS SECTION --- */}
+                                <div className="flex-1 p-2 bg-zinc-950/30">
+                                    <div className="flex items-center gap-2 mb-2 px-2 pt-1">
+                                        <span className="text-[9px] font-bold tracking-widest text-zinc-500 uppercase">Prelims</span>
+                                        <div className="h-px bg-zinc-800 flex-1" />
+                                    </div>
+
+                                    {/* Feed Item 3 (Partial) */}
+                                    <div className="px-2 py-1.5 hover:bg-zinc-900/50 transition-colors rounded-md mb-1 border border-transparent hover:border-zinc-800/50">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+                                                <div className="relative w-7 h-7 bg-zinc-900 rounded-full border border-amber-500/50 flex items-center justify-center shrink-0">
+                                                    <span className="text-xs">⚠️</span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-baseline justify-between gap-1">
+                                                        <h4 className="text-xs font-black text-white truncate">John Doe</h4>
+                                                        <span className="text-[9px] font-bold text-zinc-500 bg-zinc-900 px-1 rounded">LW</span>
+                                                    </div>
+                                                    <div className="flex gap-1.5 text-[10px] mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <span className="text-amber-500 font-bold truncate">Pick: <span className="text-white">KO R2</span></span>
+                                                        <span className="text-zinc-600 shrink-0">•</span>
+                                                        <span className="text-zinc-400 truncate">Result: KO R1</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span className="text-xs font-black text-amber-500 shrink-0">+10</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>

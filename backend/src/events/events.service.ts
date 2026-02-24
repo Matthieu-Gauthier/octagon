@@ -28,7 +28,7 @@ export class EventsService {
                         fighterA: true,
                         fighterB: true,
                     },
-                    orderBy: [{ isMainEvent: 'desc' }, { isCoMainEvent: 'desc' }, { isMainCard: 'desc' }]
+                    orderBy: { order: 'asc' }
                 }
             },
             orderBy: { date: 'asc' }
@@ -41,7 +41,7 @@ export class EventsService {
             include: {
                 fights: {
                     include: { fighterA: true, fighterB: true },
-                    orderBy: [{ isMainEvent: 'desc' }, { isCoMainEvent: 'desc' }, { isMainCard: 'desc' }]
+                    orderBy: { order: 'asc' }
                 }
             }
         });
@@ -107,6 +107,7 @@ export class EventsService {
                 where: { id: fight.id },
                 update: {
                     division: fight.division,
+                    order: fight.order,
                     rounds: fight.rounds,
                     isMainEvent: fight.isMainEvent,
                     isCoMainEvent: fight.isCoMainEvent,

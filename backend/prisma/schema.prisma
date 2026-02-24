@@ -102,6 +102,7 @@ model Fight {
   fighterAId  String
   fighterBId  String
   division    String
+  order       Int      @default(0)
   rounds      Int
   isMainEvent Boolean  @default(false)
   isCoMainEvent Boolean @default(false)

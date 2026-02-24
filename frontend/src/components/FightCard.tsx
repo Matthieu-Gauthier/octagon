@@ -18,48 +18,83 @@ const METHODS: { value: Method; short: string; icon: string; label: string }[] =
 ];
 
 // ============================================================================
-// Unified Win Methods Breakdown Widget (both fighters side-by-side)
+// Combined Stats & Wins Breakdown Widget (both fighters side-by-side)
 // ============================================================================
-type WinsBreakdownProps = {
-    fighterA: { winsByKo?: number; winsByDec?: number; winsBySub?: number };
-    fighterB: { winsByKo?: number; winsByDec?: number; winsBySub?: number };
+type CombinedStatsProps = {
+    fighterA: { winsByKo?: number; winsByDec?: number; winsBySub?: number; height?: string | null; weight?: string | null; reach?: string | null; stance?: string | null };
+    fighterB: { winsByKo?: number; winsByDec?: number; winsBySub?: number; height?: string | null; weight?: string | null; reach?: string | null; stance?: string | null };
 };
-function WinsBreakdown({ fighterA, fighterB }: WinsBreakdownProps) {
+function CombinedStats({ fighterA, fighterB }: CombinedStatsProps) {
     const totalA = (fighterA.winsByKo ?? 0) + (fighterA.winsByDec ?? 0) + (fighterA.winsBySub ?? 0);
     const totalB = (fighterB.winsByKo ?? 0) + (fighterB.winsByDec ?? 0) + (fighterB.winsBySub ?? 0);
-    if (totalA === 0 && totalB === 0) return null;
 
     const pct = (n: number, total: number) => total > 0 ? Math.round((n / total) * 100) : 0;
 
-    const rows = [
-        { label: 'KO/TKO', a: fighterA.winsByKo ?? 0, b: fighterB.winsByKo ?? 0 },
-        { label: 'DEC', a: fighterA.winsByDec ?? 0, b: fighterB.winsByDec ?? 0 },
-        { label: 'SUB', a: fighterA.winsBySub ?? 0, b: fighterB.winsBySub ?? 0 },
+    const winRows = (totalA === 0 && totalB === 0) ? [] : [
+        { label: 'KO/TKO', a: fighterA.winsByKo ?? 0, b: fighterB.winsByKo ?? 0, pA: pct(fighterA.winsByKo ?? 0, totalA), pB: pct(fighterB.winsByKo ?? 0, totalB) },
+        { label: 'DEC', a: fighterA.winsByDec ?? 0, b: fighterB.winsByDec ?? 0, pA: pct(fighterA.winsByDec ?? 0, totalA), pB: pct(fighterB.winsByDec ?? 0, totalB) },
+        { label: 'SUB', a: fighterA.winsBySub ?? 0, b: fighterB.winsBySub ?? 0, pA: pct(fighterA.winsBySub ?? 0, totalA), pB: pct(fighterB.winsBySub ?? 0, totalB) },
+    ];
+
+    const formatStat = (val?: string | null) => {
+        if (!val) return '--';
+        // If it ends with exactly ".00", remove it.
+        // E.g. "70.00" -> "70", "70.50" -> "70.50" (or we can trim .0 if we want, but let's just do .00 as requested)
+        return val.replace(/\.00$/, '');
+    };
+
+    const statRows = [
+        { label: 'HEIGHT', a: formatStat(fighterA.height), b: formatStat(fighterB.height) },
+        { label: 'WEIGHT', a: formatStat(fighterA.weight), b: formatStat(fighterB.weight) },
+        { label: 'REACH', a: formatStat(fighterA.reach), b: formatStat(fighterB.reach) },
+        { label: 'STANCE', a: fighterA.stance || '--', b: fighterB.stance || '--' },
     ];
 
     return (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-            <div className="flex flex-col items-center gap-1">
-                {/* Title */}
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">
-                    Wins by Method
+        <div className="flex flex-col items-center gap-3 w-full">
+            {winRows.length > 0 && (
+                <div className="flex flex-col items-center gap-0.5 w-full">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">
+                        Wins by Method
+                    </span>
+                    {winRows.map(({ label, a, b, pA, pB }) => (
+                        <div key={label} className="flex items-center gap-0">
+                            {/* Left — red corner */}
+                            <div className="flex items-center justify-end gap-1 w-16">
+                                <span className="text-[10px] text-zinc-500">({pA}%)</span>
+                                <span className="text-[11px] font-bold font-mono text-white/80">{a}</span>
+                            </div>
+                            {/* Label */}
+                            <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 w-14 text-center">
+                                {label}
+                            </span>
+                            {/* Right — blue corner */}
+                            <div className="flex items-center gap-1 w-16">
+                                <span className="text-[11px] font-bold font-mono text-white/80">{b}</span>
+                                <span className="text-[10px] text-zinc-500">({pB}%)</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            <div className="flex flex-col items-center gap-0.5 opacity-90 w-full mt-2">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5 mt-1">
+                    Physical Stats
                 </span>
-                {/* Rows */}
-                {rows.map(({ label, a, b }) => (
+                {statRows.map(({ label, a, b }) => (
                     <div key={label} className="flex items-center gap-0">
                         {/* Left — red corner */}
                         <div className="flex items-center justify-end gap-1 w-16">
-                            <span className="text-[10px] text-zinc-500">({pct(a, totalA)}%)</span>
-                            <span className="text-[11px] font-bold font-mono text-white/80">{a}</span>
+                            <span className="text-[10px] font-bold font-mono text-zinc-300 w-full text-right truncate">{a}</span>
                         </div>
                         {/* Label */}
-                        <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 w-14 text-center">
+                        <span className="text-[9px] font-black uppercase tracking-wider text-zinc-500 w-16 text-center">
                             {label}
                         </span>
                         {/* Right — blue corner */}
                         <div className="flex items-center gap-1 w-16">
-                            <span className="text-[11px] font-bold font-mono text-white/80">{b}</span>
-                            <span className="text-[10px] text-zinc-500">({pct(b, totalB)}%)</span>
+                            <span className="text-[10px] font-bold font-mono text-zinc-300 w-full text-left truncate">{b}</span>
                         </div>
                     </div>
                 ))}
@@ -299,7 +334,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 )}
                 {eventType === "standard" && (
                     <div className="flex justify-between items-start p-3 bg-gradient-to-b from-zinc-950/80 to-transparent relative">
-                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.division}</Badge>
+                        <div className="flex-1" />
 
                         <div className="absolute top-3 left-1/2 -translate-x-1/2">
                             {lockAt && (
@@ -326,15 +361,32 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                             )}
                         </div>
 
-                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.rounds} RND</Badge>
+                        <div className="flex items-center gap-1.5 z-30">
+                            <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.division}</Badge>
+                            <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{fight.rounds} RND</Badge>
+                        </div>
                     </div>
                 )}
             </div>
 
             {/* Fighters Area */}
             <div className={cn("grid grid-cols-2 relative transition-all", heightClass)}>
-                {/* Unified win stats widget */}
-                <WinsBreakdown fighterA={fight.fighterA} fighterB={fight.fighterB} />
+                {/* Central Info Column */}
+                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center justify-center gap-2 w-[160px] py-4 mt-8 sm:mt-6">
+                    <CombinedStats fighterA={fight.fighterA} fighterB={fight.fighterB} />
+                </div>
+
+                {/* Flags Near Top Corners */}
+                {getFlagForHometown(fight.fighterA.hometown) && (
+                    <div className="absolute top-12 left-3 z-10 pointer-events-none">
+                        <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterA.hometown)}.png`} alt="flag" className="w-[32px] h-[22px] rounded-[3px] object-cover shadow-[0_4px_10px_rgba(0,0,0,0.8)] opacity-90" />
+                    </div>
+                )}
+                {getFlagForHometown(fight.fighterB.hometown) && (
+                    <div className="absolute top-12 right-3 z-10 pointer-events-none">
+                        <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterB.hometown)}.png`} alt="flag" className="w-[32px] h-[22px] rounded-[3px] object-cover shadow-[0_4px_10px_rgba(0,0,0,0.8)] opacity-90" />
+                    </div>
+                )}
 
                 {/* Fighter A */}
                 {/* Fighter A */}
@@ -354,9 +406,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 >
                     <div className={cn("absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none", winner === fight.fighterA.id && "bg-gradient-to-t from-red-950/80 via-red-950/40 to-transparent")}>
                         <div className="transition-transform duration-300 origin-bottom-left group-hover:scale-105 mb-1">
-                            {winner === fight.fighterA.id && (
-                                <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
-                            )}
+
                             <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto relative">
                                 {fight.fighterA.name.split(" ").map((n, i) => (
                                     <span key={i} className="block relative">
@@ -375,27 +425,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     </div>
                 </FighterPortrait>
 
-                {/* VS Badge */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-                    <div className={cn(
-                        "flex items-center justify-center transition-all shadow-2xl duration-500 relative",
-                        (getFlagForHometown(fight.fighterA.hometown) || getFlagForHometown(fight.fighterB.hometown))
-                            ? cn("bg-zinc-950/80 backdrop-blur-md rounded-[12px] px-2 py-1.5 gap-1.5", winner ? "scale-[0.85] opacity-60 grayscale-[0.8]" : "scale-100")
-                            : cn("rounded-full w-8 h-8", winner ? "scale-75 opacity-50 border border-zinc-700 bg-zinc-900 text-zinc-600" : "bg-white text-black border-2 border-zinc-950 scale-100")
-                    )}>
-                        {getFlagForHometown(fight.fighterA.hometown) && (
-                            <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterA.hometown)}.png`} alt="flag" className="w-[28px] h-[20px] rounded-[3px] object-cover shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-                        )}
-                        {(getFlagForHometown(fight.fighterA.hometown) || getFlagForHometown(fight.fighterB.hometown)) ? (
-                            <span className="font-black italic text-[9px] text-zinc-500">VS</span>
-                        ) : (
-                            <span className="font-black italic text-xs -ml-0.5 mt-0.5">VS</span>
-                        )}
-                        {getFlagForHometown(fight.fighterB.hometown) && (
-                            <img src={`https://flagcdn.com/w40/${getFlagForHometown(fight.fighterB.hometown)}.png`} alt="flag" className="w-[28px] h-[20px] rounded-[3px] object-cover shadow-[0_2px_4px_rgba(0,0,0,0.5)]" />
-                        )}
-                    </div>
-                </div>
+
 
                 {/* Fighter B */}
                 <FighterPortrait
@@ -414,9 +444,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 >
                     <div className={cn("absolute bottom-0 right-0 w-full p-4 pb-4 text-right flex flex-col justify-end h-full pointer-events-none", winner === fight.fighterB.id && "bg-gradient-to-t from-blue-950/80 via-blue-950/40 to-transparent")}>
                         <div className="flex flex-col items-end transition-transform duration-300 origin-bottom-right group-hover:scale-105 mb-1">
-                            {winner === fight.fighterB.id && (
-                                <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
-                            )}
+
                             <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto relative text-right">
                                 {fight.fighterB.name.split(" ").map((n, i) => (
                                     <span key={i} className="block relative">

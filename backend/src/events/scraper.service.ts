@@ -29,6 +29,7 @@ export interface ScrapedFight {
     fighterAId: string;
     fighterBId: string;
     division: string;
+    order: number;
     rounds: number;
     isMainEvent: boolean;
     isCoMainEvent: boolean;
@@ -146,6 +147,7 @@ export class ScraperService {
                         fighterAId: fASlug,
                         fighterBId: fBSlug,
                         division: weightClass,
+                        order: globalIndex,
                         rounds: (globalIndex === 0 || weightClass.toLowerCase().includes('title')) ? 5 : 3,
                         isMainEvent: globalIndex === 0,
                         isCoMainEvent: globalIndex === 1,
