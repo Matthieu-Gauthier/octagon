@@ -61,21 +61,48 @@ export class ScraperService {
     private readonly UFC_BASE_URL = 'https://www.ufc.com';
 
     async scrapeNextEvent(): Promise<ScrapedEventData | null> {
-        this.logger.log('Starting UFC event scrape...');
+        const events = await this.scrapeUpcomingEvents(1);
+        return events.length > 0 ? events[0] : null;
+    }
+
+    async scrapeUpcomingEvents(limit: number = 5): Promise<ScrapedEventData[]> {
+        this.logger.log(`Starting UFC events scrape for top ${limit} events...`);
         try {
             const eventsHtml = await this.fetchHtml(`${this.UFC_BASE_URL}/events`);
-
-            // Find the first event link in the HTML 
-            // The upcoming event is usually the first one listed in the block
             const matches = eventsHtml.match(/href="\/event\/([^"]+)"/g) || [];
-            if (matches.length === 0) {
+
+            // Extract slugs and deduplicate them
+            const slugs = [...new Set(matches.map(m => m.replace('href="/event/', '').replace('"', '')))];
+
+            if (slugs.length === 0) {
                 this.logger.warn('No upcoming event link found in HTML');
-                return null;
+                return [];
             }
 
-            // Extract the slug from the first match e.g. 'href="/event/ufc-fight-night-february-21-2026"'
-            const firstEventMatch = matches[0];
-            const eventSlug = firstEventMatch?.replace('href="/event/', '').replace('"', '');
+            const slugsToScrape = slugs.slice(0, limit);
+            const results: ScrapedEventData[] = [];
+
+            for (const slug of slugsToScrape) {
+                try {
+                    const eventData = await this.scrapeEventBySlug(slug);
+                    if (eventData) {
+                        results.push(eventData);
+                    }
+                } catch (e) {
+                    this.logger.error(`Error scraping event ${slug}: ${e}`);
+                }
+            }
+
+            return results;
+        } catch (error) {
+            this.logger.error(`Failed to scrape upcoming events list: ${error}`);
+            return [];
+        }
+    }
+
+    async scrapeEventBySlug(eventSlug: string): Promise<ScrapedEventData | null> {
+        try {
+            if (!eventSlug) return null;
             const eventUrl = `${this.UFC_BASE_URL}/event/${eventSlug}`;
 
             this.logger.log(`Fetching event details from ${eventUrl}`);
@@ -176,7 +203,7 @@ export class ScraperService {
      * Reads data-timestamp (Unix seconds) from .c-event-fight-card-broadcaster__time within sectionId.
      * Returns undefined if the element or attribute is missing.
      */
-    private extractSectionTimestamp($: cheerio.CheerioAPI, sectionId: string): Date | undefined {
+    private extractSectionTimestamp($: ReturnType<typeof cheerio.load>, sectionId: string): Date | undefined {
         const ts = $(`${sectionId} .c-event-fight-card-broadcaster__time`).first().attr('data-timestamp');
         if (!ts) return undefined;
         const parsed = parseInt(ts, 10);

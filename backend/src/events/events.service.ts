@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScraperService } from './scraper.service';
 
@@ -13,15 +14,6 @@ export class EventsService {
 
     async findAll(userId: string) {
         return this.prisma.event.findMany({
-            where: {
-                OR: [
-                    { status: { in: ['SCHEDULED', 'LIVE'] } },
-                    {
-                        status: 'FINISHED',
-                        fights: { some: { bets: { some: { userId } } } }
-                    }
-                ]
-            },
             include: {
                 fights: {
                     include: {
@@ -55,6 +47,39 @@ export class EventsService {
             throw new NotFoundException('Failed to scrape upcoming event from the source.');
         }
 
+        const { event, fights, fighters } = scrapedData;
+        const stats = await this.processScrapedData(scrapedData);
+
+        return {
+            success: true,
+            message: `Successfully imported ${event.name}`,
+            data: {
+                event: {
+                    id: event.id,
+                    name: event.name,
+                    date: event.date
+                },
+                stats
+            }
+        };
+    }
+
+    @Cron('0 4 * * *') // Run daily at 4:00 AM
+    async handleUpcomingEventsCron() {
+        this.logger.log('CRON: Fetching top 5 upcoming events...');
+        try {
+            const limit = 5;
+            const scrapedArray = await this.scraper.scrapeUpcomingEvents(limit);
+            for (const data of scrapedArray) {
+                await this.processScrapedData(data);
+            }
+            this.logger.log(`CRON: Finished fetching top ${limit} upcoming events.`);
+        } catch (err) {
+            this.logger.error(`CRON Error fetching upcoming events: ${err.message}`, err.stack);
+        }
+    }
+
+    private async processScrapedData(scrapedData: any) {
         const { event, fights, fighters } = scrapedData;
 
         // Upsert Event
@@ -92,7 +117,6 @@ export class EventsService {
                     sigStrikesLandedPerMin: fighter.sigStrikesLandedPerMin,
                     takedownAvg: fighter.takedownAvg,
                     hometown: fighter.hometown ?? null,
-                    // Only overwrite imagePath if not null, or always overwrite
                     ...(fighter.imagePath ? { imagePath: fighter.imagePath } : {}),
                 },
                 create: fighter,
@@ -102,7 +126,10 @@ export class EventsService {
 
         // Upsert Fights
         let fightsAdded = 0;
+        const validFightIds: string[] = [];
+
         for (const fight of fights) {
+            validFightIds.push(fight.id);
             await this.prisma.fight.upsert({
                 where: { id: fight.id },
                 update: {
@@ -123,21 +150,21 @@ export class EventsService {
             fightsAdded++;
         }
 
-        return {
-            success: true,
-            message: `Successfully imported ${event.name}`,
-            data: {
-                event: {
-                    id: event.id,
-                    name: event.name,
-                    date: event.date
-                },
-                stats: {
-                    fightersAddedOrUpdated: fightersUpdated,
-                    fightsAdded,
+        // Delete fights that exist in DB for this event but are no longer in the scraped data (e.g. cancelled)
+        if (validFightIds.length > 0) {
+            const deleteResult = await this.prisma.fight.deleteMany({
+                where: {
+                    eventId: event.id,
+                    id: { notIn: validFightIds }
                 }
+            });
+
+            if (deleteResult.count > 0) {
+                this.logger.log(`Deleted ${deleteResult.count} cancelled or removed fights from event ${event.id}`);
             }
-        };
+        }
+
+        return { fightersAddedOrUpdated: fightersUpdated, fightsAdded };
     }
 
     async removeEvent(id: string) {
