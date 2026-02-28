@@ -62,6 +62,7 @@ export function BettingForm({ fight, leagueId, onClose }: BettingFormProps) {
         if (onClose) onClose();
     }
 
+    // eslint-disable-next-line react-hooks/incompatible-library
     const selectedWinner = form.watch("winnerId");
     const isMethodSelected = !!form.watch("method");
 

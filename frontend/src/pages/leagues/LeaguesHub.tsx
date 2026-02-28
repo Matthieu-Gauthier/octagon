@@ -19,7 +19,7 @@ export function LeaguesHub() {
             await joinLeague(joinCode);
             // toast handled by hook
             setJoinCode("");
-        } catch (error) {
+        } catch {
             // error handled by hook
         }
     };

@@ -11,9 +11,14 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   await app.listen(process.env.PORT ?? 3000);
 
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   if (module.hot) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     module.hot.accept();
-    module.hot.dispose(() => app.close());
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+    module.hot.dispose(() => {
+      void app.close();
+    });
   }
 }
-bootstrap();
+void bootstrap();

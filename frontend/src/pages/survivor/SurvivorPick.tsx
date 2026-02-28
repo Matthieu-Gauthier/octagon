@@ -6,12 +6,13 @@ import { VegasFightCard } from "@/components/FightCard";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
+// SurvivorContext temporairement désactivé — stubs locaux
+const makePick = (_eventId: string, _fightId: string, _fighterId: string) => { };
+const getPicksForEvent = (_eventId: string): { fightId: string; fighterId: string }[] => [];
+
 export function SurvivorPick() {
     const { eventId } = useParams();
     const navigate = useNavigate();
-    // SurvivorContext temporairement désactivé — stubs locaux
-    const makePick = (_eventId: string, _fightId: string, _fighterId: string) => { };
-    const getPicksForEvent = (_eventId: string): { fightId: string; fighterId: string }[] => [];
 
     // Fetch Data
     const { data: event, isLoading, error } = useEvent(eventId || "");
@@ -24,7 +25,8 @@ export function SurvivorPick() {
         if (event && eventId) {
             const existingPicks = getPicksForEvent(eventId);
             const initialSelections: Record<string, string> = {};
-            existingPicks.forEach(p => { initialSelections[p.fightId] = p.fighterId; });
+            existingPicks.forEach((p: { fightId: string; fighterId: string }) => { initialSelections[p.fightId] = p.fighterId; });
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelections(initialSelections);
         }
     }, [event, eventId, getPicksForEvent]);

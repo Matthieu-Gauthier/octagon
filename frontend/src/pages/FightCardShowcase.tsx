@@ -78,6 +78,7 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
             const timer = setTimeout(() => setShowDrawer(false), 1000);
             return () => clearTimeout(timer);
         } else {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowDrawer(true);
         }
     }, [isComplete, method, round]);

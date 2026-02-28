@@ -4,17 +4,17 @@ import { SupabaseGuard } from '../auth/supabase.guard';
 
 @Controller('fighters')
 export class FightersController {
-    constructor(private readonly fightersService: FightersService) { }
+  constructor(private readonly fightersService: FightersService) {}
 
-    @Get()
-    @UseGuards(SupabaseGuard)
-    findAll() {
-        return this.fightersService.findAll();
-    }
+  @Get()
+  @UseGuards(SupabaseGuard)
+  findAll() {
+    return this.fightersService.findAll();
+  }
 
-    @Get(':id')
-    @UseGuards(SupabaseGuard)
-    findOne(@Param('id') id: string) {
-        return this.fightersService.findOne(id);
-    }
+  @Get(':id')
+  @UseGuards(SupabaseGuard)
+  findOne(@Param('id') id: string) {
+    return this.fightersService.findOne(id);
+  }
 }

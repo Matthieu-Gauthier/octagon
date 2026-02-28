@@ -75,6 +75,7 @@ export function LeagueProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useLeague() {
     const context = useContext(LeagueContext);
     if (context === undefined) {

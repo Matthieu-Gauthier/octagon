@@ -36,7 +36,7 @@ export function useGameRealtime(leagueId?: string) {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'fights' },
-                (_payload) => {
+                () => {
 
                     // Update events/fights cache
                     queryClient.invalidateQueries({ queryKey: ['events'] });
@@ -47,13 +47,13 @@ export function useGameRealtime(leagueId?: string) {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'bets', filter: `leagueId=eq.${leagueId}` },
-                (_payload) => {
+                () => {
 
                     // Update bets cache
                     queryClient.invalidateQueries({ queryKey: ['bets', leagueId] });
                 }
             )
-            .subscribe((status, _err) => {
+            .subscribe((status) => {
                 // console.log(`[Realtime] Subscription status: ${status}`, err ? err : '');
 
 
@@ -62,7 +62,7 @@ export function useGameRealtime(leagueId?: string) {
 
                     if (pollingInterval) {
                         clearInterval(pollingInterval);
-                        // @ts-ignore
+                        // @ts-expect-error Clear reference
                         pollingInterval = undefined; // Clear the reference
                     }
                 }

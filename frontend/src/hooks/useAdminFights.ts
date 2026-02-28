@@ -22,6 +22,7 @@ export function useUpdateFightResult() {
             queryClient.invalidateQueries({ queryKey: ["events"] });
             queryClient.invalidateQueries({ queryKey: ["leagues"] }); // To refresh standings
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error("Failed to update result: " + (error.response?.data?.message || error.message));
         },

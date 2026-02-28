@@ -160,6 +160,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
 
     // Sync from external value
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setWinner(value?.winnerId ?? null);
         setMethod((value?.method as Method) ?? null);
         setRound(value?.round ?? null);
@@ -176,6 +177,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
             const timer = setTimeout(() => setShowDrawer(false), 1000);
             return () => clearTimeout(timer);
         } else if (!isComplete) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setShowDrawer(true);
         }
     }, [isComplete, method, round, mode, isLocked]);

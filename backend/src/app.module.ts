@@ -32,4 +32,4 @@ import { JobsModule } from './jobs/jobs.module';
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],
 })
-export class AppModule { }
+export class AppModule {}

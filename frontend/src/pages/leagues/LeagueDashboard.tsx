@@ -255,6 +255,7 @@ export function LeagueDashboard() {
     const settings = { ...defaultSettings, ...(league.scoringSettings as object || {}) };
 
     // Calculate perfect picks for everyone first to allow sorting
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const enrichedStandings = [...(leagueStandings || [])].map((s: any) => {
         let perfect = 0;
         const userBets = allBets?.filter(b => b.leagueId === league.id && b.userId === s.userId) || [];
@@ -274,6 +275,7 @@ export function LeagueDashboard() {
         return { ...s, perfect };
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const sortedStandings = [...enrichedStandings].sort((a: any, b: any) => {
         if (b.points !== a.points) return b.points - a.points; // 1. Points
         if (b.perfect !== a.perfect) return b.perfect - a.perfect; // 2. Perfect Picks
@@ -283,6 +285,7 @@ export function LeagueDashboard() {
     const displayStandings = [...sortedStandings];
 
     // Use sortedStandings for navigation to keep it stable
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const activeUserIdx = sortedStandings.findIndex((s: any) => s.userId === activeUserId);
 
     const handlePrevUser = () => {

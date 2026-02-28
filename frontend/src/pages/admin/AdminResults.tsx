@@ -23,6 +23,7 @@ export function AdminResults() {
         if (events && events.length > 0 && !currentEventId) {
             setCurrentEventId(events[0].id);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [events]);
 
     const currentEvent = events?.find(e => e.id === currentEventId);
@@ -42,6 +43,7 @@ export function AdminResults() {
                     setCurrentEventId(""); // Reset selection
                     window.alert(`Event removed successfully.`);
                 },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onError: (err: any) => {
                     window.alert(`Failed to remove event: ${err?.message || "Unknown error"}`);
                 }
@@ -49,6 +51,7 @@ export function AdminResults() {
         }
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleResultChange = (fight: any, field: string, value: string | number) => {
         setResults(prev => {
             const current = Object.keys(prev).includes(fight.id) ? prev[fight.id] : {
@@ -126,6 +129,7 @@ export function AdminResults() {
                     size="sm"
                     onClick={() => fetchEventMutation.mutate(undefined, {
                         onSuccess: () => window.alert("Upcoming event fetched successfully!"),
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         onError: (err: any) => window.alert(`Failed to fetch event: ${err?.message || "Check the console."}`)
                     })}
                     disabled={fetchEventMutation.isPending}
@@ -182,6 +186,7 @@ export function AdminResults() {
     const mainCardFights = sortedFights.filter(f => f.isMainCard);
     const prelimFights = sortedFights.filter(f => !f.isMainCard);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const renderFightCard = (fight: any) => {
         // Init state from existing fight data if not in local state
         const currentResult = results[fight.id] || {

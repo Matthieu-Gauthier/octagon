@@ -40,6 +40,7 @@ export function useCreateLeague() {
             queryClient.invalidateQueries({ queryKey: ["leagues"] });
             // Optionally update cache directly if needed
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to create league");
         }
@@ -58,6 +59,7 @@ export function useJoinLeague() {
             toast.success("Joined league!");
             queryClient.invalidateQueries({ queryKey: ["leagues"] });
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to join league");
         }
@@ -69,6 +71,7 @@ export function useLeagueStandings(id: string) {
     return useQuery({
         queryKey: ["leagues", id, "standings"],
         queryFn: async () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { data } = await api.get<any[]>(`/leagues/${id}/standings`);
             return data;
         },

@@ -41,6 +41,7 @@ export function usePlaceBet() {
             queryClient.invalidateQueries({ queryKey: ['bets', newBet.leagueId] });
             queryClient.invalidateQueries({ queryKey: ['bets', newBet.leagueId, 'me'] });
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to place bet');
         },
@@ -61,6 +62,7 @@ export function useRemoveBet() {
             // unless we pass it. For now, invalidate all 'bets' queries
             queryClient.invalidateQueries({ queryKey: ['bets'] });
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || 'Failed to remove bet');
         },

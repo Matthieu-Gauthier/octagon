@@ -36,7 +36,7 @@ export function CreateLeague() {
             });
             // toast handled by hook
             navigate(`/leagues/${newLeague.id}`);
-        } catch (error) {
+        } catch {
             // error handled by hook
         }
     };
