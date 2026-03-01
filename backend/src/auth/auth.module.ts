@@ -5,8 +5,8 @@ import { SupabaseStrategy } from './supabase.strategy';
 import { SupabaseGuard } from './supabase.guard';
 
 @Module({
-    imports: [ConfigModule, PassportModule],
-    providers: [SupabaseStrategy, SupabaseGuard],
-    exports: [SupabaseStrategy, SupabaseGuard],
+  imports: [ConfigModule, PassportModule],
+  providers: [SupabaseStrategy, SupabaseGuard],
+  exports: [SupabaseStrategy, SupabaseGuard],
 })
-export class AuthModule { }
+export class AuthModule {}

@@ -1,43 +1,213 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { ScraperService, ScrapedEventData } from './scraper.service';
+import { UfcstatsEnrichmentService } from './ufcstats-enrichment.service';
 
 @Injectable()
 export class EventsService {
-    constructor(private prisma: PrismaService) { }
+  private readonly logger = new Logger(EventsService.name);
 
-    async findAll(userId: string) {
-        return this.prisma.event.findMany({
-            where: {
-                OR: [
-                    { status: { in: ['SCHEDULED', 'LIVE'] } },
-                    {
-                        status: 'FINISHED',
-                        fights: { some: { bets: { some: { userId } } } }
-                    }
-                ]
-            },
-            include: {
-                fights: {
-                    include: {
-                        fighterA: true,
-                        fighterB: true,
-                    },
-                    orderBy: [{ isMainEvent: 'desc' }, { isCoMainEvent: 'desc' }, { isMainCard: 'desc' }]
-                }
-            },
-            orderBy: { date: 'asc' }
-        });
+  constructor(
+    private prisma: PrismaService,
+    private scraper: ScraperService,
+    private enrichment: UfcstatsEnrichmentService,
+  ) {}
+
+  async findAll(_userId: string) {
+    return this.prisma.event.findMany({
+      include: {
+        fights: {
+          include: {
+            fighterA: true,
+            fighterB: true,
+          },
+          orderBy: { order: 'asc' },
+        },
+      },
+      orderBy: { date: 'asc' },
+    });
+  }
+
+  async findOne(id: string) {
+    return this.prisma.event.findUnique({
+      where: { id },
+      include: {
+        fights: {
+          include: { fighterA: true, fighterB: true },
+          orderBy: { order: 'asc' },
+        },
+      },
+    });
+  }
+
+  async fetchNextEvent() {
+    this.logger.log('Executing fetchNextEvent request...');
+    const scrapedData = await this.scraper.scrapeNextEvent();
+
+    if (!scrapedData) {
+      throw new NotFoundException(
+        'Failed to scrape upcoming event from the source.',
+      );
     }
 
-    async findOne(id: string) {
-        return this.prisma.event.findUnique({
-            where: { id },
-            include: {
-                fights: {
-                    include: { fighterA: true, fighterB: true },
-                    orderBy: [{ isMainEvent: 'desc' }, { isCoMainEvent: 'desc' }, { isMainCard: 'desc' }]
-                }
-            }
+    const { event } = scrapedData;
+    const stats = await this.processScrapedData(scrapedData);
+
+    // Fire-and-forget UFCStats enrichment — failure must not break scrape
+    this.enrichment.enrichEvent(event.id).catch((err: unknown) => {
+      this.logger.warn(
+        `[Enrichment] Auto-enrichment failed for '${event.id}': ${String(err)}`,
+      );
+    });
+
+    return {
+      success: true,
+      message: `Successfully imported ${event.name}`,
+      data: {
+        event: {
+          id: event.id,
+          name: event.name,
+          date: event.date,
+        },
+        stats,
+      },
+    };
+  }
+
+  @Cron('0 4 * * *') // Run daily at 4:00 AM
+  async handleUpcomingEventsCron() {
+    this.logger.log('CRON: Fetching top 3 upcoming events...');
+    try {
+      const limit = 3;
+      const scrapedArray = await this.scraper.scrapeUpcomingEvents(limit);
+      for (const data of scrapedArray) {
+        await this.processScrapedData(data);
+        // Fire-and-forget enrichment per event
+        this.enrichment.enrichEvent(data.event.id).catch((err: unknown) => {
+          this.logger.warn(
+            `[Enrichment] Cron enrichment failed for '${data.event.id}': ${String(err)}`,
+          );
         });
+      }
+      this.logger.log(`CRON: Finished fetching top ${limit} upcoming events.`);
+    } catch (err) {
+      this.logger.error(
+        `CRON Error fetching upcoming events: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+      );
     }
+  }
+
+  private async processScrapedData(scrapedData: ScrapedEventData) {
+    const { event, fights, fighters } = scrapedData;
+
+    // Upsert Event
+    await this.prisma.event.upsert({
+      where: { id: event.id },
+      update: {
+        name: event.name,
+        date: event.date,
+        location: event.location,
+        status: event.status,
+        prelimsStartAt: event.prelimsStartAt ?? null,
+        mainCardStartAt: event.mainCardStartAt ?? null,
+        eventImg: event.eventImg ?? null,
+      },
+      create: event,
+    });
+
+    // Upsert Fighters
+    let fightersUpdated = 0;
+    for (const fighter of fighters) {
+      await this.prisma.fighter.upsert({
+        where: { id: fighter.id },
+        update: {
+          wins: fighter.wins,
+          losses: fighter.losses,
+          draws: fighter.draws,
+          noContests: fighter.noContests,
+          winsByKo: fighter.winsByKo,
+          winsBySub: fighter.winsBySub,
+          winsByDec: fighter.winsByDec,
+          height: fighter.height,
+          weight: fighter.weight,
+          reach: fighter.reach,
+          stance: fighter.stance,
+          sigStrikesLandedPerMin: fighter.sigStrikesLandedPerMin,
+          takedownAvg: fighter.takedownAvg,
+          hometown: fighter.hometown ?? null,
+          ...(fighter.imagePath ? { imagePath: fighter.imagePath } : {}),
+          ...(fighter.recentForm ? { recentForm: fighter.recentForm } : {}),
+        },
+        create: fighter,
+      });
+      fightersUpdated++;
+    }
+
+    // Upsert Fights
+    let fightsAdded = 0;
+    const validFightIds: string[] = [];
+
+    for (const fight of fights) {
+      validFightIds.push(fight.id);
+      await this.prisma.fight.upsert({
+        where: { id: fight.id },
+        update: {
+          division: fight.division,
+          order: fight.order,
+          rounds: fight.rounds,
+          isMainEvent: fight.isMainEvent,
+          isCoMainEvent: fight.isCoMainEvent,
+          isMainCard: fight.isMainCard,
+          isPrelim: fight.isPrelim,
+          status: fight.status,
+        },
+        create: {
+          ...fight,
+          eventId: event.id,
+        },
+      });
+      fightsAdded++;
+    }
+
+    // Delete fights that exist in DB for this event but are no longer in the scraped data (e.g. cancelled)
+    if (validFightIds.length > 0) {
+      const deleteResult = await this.prisma.fight.deleteMany({
+        where: {
+          eventId: event.id,
+          id: { notIn: validFightIds },
+        },
+      });
+
+      if (deleteResult.count > 0) {
+        this.logger.log(
+          `Deleted ${deleteResult.count} cancelled or removed fights from event ${event.id}`,
+        );
+      }
+    }
+
+    return { fightersAddedOrUpdated: fightersUpdated, fightsAdded };
+  }
+
+  async removeEvent(id: string) {
+    // Find if event exists to provide a clean 404 if not
+    const event = await this.prisma.event.findUnique({
+      where: { id },
+    });
+
+    if (!event) {
+      throw new NotFoundException(`Event with ID ${id} not found.`);
+    }
+
+    // Delete event (relations cascade)
+    await this.prisma.event.delete({
+      where: { id },
+    });
+
+    return {
+      success: true,
+      message: `Event ${event.name} removed successfully.`,
+    };
+  }
 }

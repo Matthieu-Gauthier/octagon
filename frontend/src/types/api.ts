@@ -1,19 +1,40 @@
+// =============================================================================
+// Frontend API Types — aligned with backend Prisma schema
+// Single source of truth for all domain types
+// =============================================================================
+
+export type Method = 'KO/TKO' | 'SUBMISSION' | 'DECISION' | 'DRAW' | 'NC';
+
+export type FightStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED';
+
 export interface Fighter {
     id: string;
     name: string;
-    wins: number;
-    losses: number;
-    draws: number;
-    record: string;
-    imageUrl?: string;
+    hometown?: string;
+    // Stats from Prisma (all optional — may not be populated yet)
+    wins?: number;
+    losses?: number;
+    draws?: number;
+    noContests?: number;
+    winsByKo?: number;
+    winsBySub?: number;
+    winsByDec?: number;
+    height?: string;
+    weight?: string;
+    reach?: string;
+    stance?: string;
+    sigStrikesLandedPerMin?: number;
+    takedownAvg?: number;
+    imagePath?: string;
+    recentForm?: {
+        result: 'W' | 'L' | 'D' | 'NC';
+        method: string;
+    }[];
 }
-
 
 export interface Fight {
     id: string;
-    eventId: string;
-    fighterAId: string;
-    fighterBId: string;
+    eventId?: string;
     fighterA: Fighter;
     fighterB: Fighter;
     division: string;
@@ -21,14 +42,13 @@ export interface Fight {
     isMainEvent: boolean;
     isCoMainEvent?: boolean;
     isMainCard: boolean;
-    status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
+    isPrelim?: boolean;
+    status: FightStatus;
     winnerId?: string;
     method?: string;
     round?: number;
-    updatedAt: string;
-    bets?: Bet[]; // Optional, included if needed
+    time?: string;
 }
-
 
 export interface Event {
     id: string;
@@ -37,7 +57,13 @@ export interface Event {
     location?: string;
     status: 'SCHEDULED' | 'LIVE' | 'FINISHED';
     fights?: Fight[];
+    prelimsStartAt?: string | null;   // from #prelims-card data-timestamp
+    mainCardStartAt?: string | null;  // from #main-card data-timestamp
+    eventImg?: string | null;
 }
+
+// Alias kept for backward compat with components using UfcEvent
+export type UfcEvent = Event;
 
 export interface UserProfile {
     id: string;
@@ -45,6 +71,9 @@ export interface UserProfile {
     email: string;
     avatarUrl?: string;
 }
+
+// Alias kept for backward compat
+export type User = UserProfile;
 
 export interface LeagueMember {
     id: string;
@@ -59,7 +88,7 @@ export interface ScoringSettings {
     winner: number;
     method: number;
     round: number;
-    decision: number;
+    decision?: number;
 }
 
 export interface League {
@@ -76,7 +105,6 @@ export interface League {
     admin?: UserProfile;
     scoringSettings?: ScoringSettings;
 }
-
 
 export interface Bet {
     id: string;
@@ -97,6 +125,13 @@ export interface BetDTO {
     round?: number;
 }
 
+export interface LeaderboardEntry {
+    userId: string;
+    user: UserProfile;
+    points: number;
+    betsPlaced: number;
+    perfectPicks: number;
+}
 
 export interface LeagueStanding {
     userId: string;

@@ -35,11 +35,12 @@ export function useCreateLeague() {
             const { data } = await api.post<League>("/leagues", payload);
             return data;
         },
-        onSuccess: (data) => {
+        onSuccess: (_data) => {
             toast.success("League created successfully!");
             queryClient.invalidateQueries({ queryKey: ["leagues"] });
             // Optionally update cache directly if needed
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to create league");
         }
@@ -58,18 +59,22 @@ export function useJoinLeague() {
             toast.success("Joined league!");
             queryClient.invalidateQueries({ queryKey: ["leagues"] });
         },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onError: (error: any) => {
             toast.error(error.response?.data?.message || "Failed to join league");
         }
     });
 }
 
-export function useLeagueStandings(id: string) {
+export function useLeagueStandings(id: string, eventId?: string) {
     const isConnected = useRealtimeStore(s => s.isConnected);
     return useQuery({
-        queryKey: ["leagues", id, "standings"],
+        queryKey: ["leagues", id, "standings", eventId],
         queryFn: async () => {
-            const { data } = await api.get<any[]>(`/leagues/${id}/standings`);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data } = await api.get<any[]>(`/leagues/${id}/standings`, {
+                params: eventId ? { eventId } : undefined,
+            });
             return data;
         },
         enabled: !!id,

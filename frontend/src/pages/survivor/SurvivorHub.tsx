@@ -7,31 +7,34 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useSurvivor } from "@/context/SurvivorContext";
 import { Link } from "react-router-dom";
 import { Flame, Trophy, CheckCircle } from "lucide-react";
-import { MOCK_EVENTS } from "@/data/mock-data";
-import { SurvivorPick } from "@/data/mock-survivor";
+import type { Event } from "@/types/api";
 
-export function SurvivorHub({ leagueId }: { leagueId?: string }) {
-    const { profile, picks, getPicksForEvent, getEventResult } = useSurvivor();
-    const currentEvent = MOCK_EVENTS.find(e => new Date(e.date) > new Date()) || MOCK_EVENTS[0];
-    const eventPicks = getPicksForEvent(currentEvent.id);
+export function SurvivorHub({ leagueId, events = [] }: { leagueId?: string; events?: Event[] }) {
+    // SurvivorContext temporairement désactivé — stubs locaux
+    const profile = { currentStreak: 0, bestStreak: 0 };
+    const picks: { eventId: string; fightId: string; fighterId: string; id: string; status: string }[] = [];
+    const getPicksForEvent = (_eventId: string) => [];
+    const getEventResult = (_eventId: string): 'PERFECT' | 'FAILED' | 'PENDING' => 'PENDING';
+    const currentEvent = events.find(e => new Date(e.date) > new Date()) || events[0];
+    const eventPicks = currentEvent ? getPicksForEvent(currentEvent.id) : [];
     const hasPicked = eventPicks.length > 0;
     const picksCount = eventPicks.length;
-    const totalFights = currentEvent.fights.length;
-    const isComplete = picksCount === totalFights;
+    const totalFights = currentEvent?.fights?.length ?? 0;
+    const isComplete = picksCount === totalFights && totalFights > 0;
 
     if (!profile) return <div>Loading...</div>;
+    if (!currentEvent) return <div className="text-center text-muted-foreground py-8">No upcoming event found.</div>;
 
     // Group picks by event
-    const picksByEvent = picks.reduce((acc, pick) => {
+    const picksByEvent = picks.reduce((acc: Record<string, typeof picks>, pick) => {
         if (!acc[pick.eventId]) {
             acc[pick.eventId] = [];
         }
         acc[pick.eventId].push(pick);
         return acc;
-    }, {} as Record<string, SurvivorPick[]>);
+    }, {} as Record<string, typeof picks>);
 
     return (
         <div className="space-y-8 max-w-4xl mx-auto">
@@ -101,13 +104,13 @@ export function SurvivorHub({ leagueId }: { leagueId?: string }) {
                     <Accordion type="single" collapsible className="w-full">
                         {Object.entries(picksByEvent)
                             .sort(([eventIdA], [eventIdB]) => {
-                                const eventA = MOCK_EVENTS.find(e => e.id === eventIdA);
-                                const eventB = MOCK_EVENTS.find(e => e.id === eventIdB);
+                                const eventA = events.find(e => e.id === eventIdA);
+                                const eventB = events.find(e => e.id === eventIdB);
                                 if (!eventA || !eventB) return 0;
                                 return new Date(eventB.date).getTime() - new Date(eventA.date).getTime();
                             })
                             .map(([eventId, eventPicks]) => {
-                                const event = MOCK_EVENTS.find(e => e.id === eventId);
+                                const event = events.find(e => e.id === eventId);
                                 const eventName = event ? event.name : eventId;
                                 const totalPicks = eventPicks.length;
                                 const result = getEventResult(eventId);
@@ -143,7 +146,7 @@ export function SurvivorHub({ leagueId }: { leagueId?: string }) {
                                             <div className="space-y-2 pt-2">
                                                 {eventPicks.map((pick) => {
                                                     // Find the fight to show fighter names
-                                                    const fight = event?.fights.find(f => f.id === pick.fightId);
+                                                    const fight = event?.fights?.find(f => f.id === pick.fightId);
                                                     const pickedFighter = fight
                                                         ? (fight.fighterA.id === pick.fighterId ? fight.fighterA.name : fight.fighterB.name)
                                                         : pick.fighterId;

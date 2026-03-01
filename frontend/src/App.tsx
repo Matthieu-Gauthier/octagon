@@ -13,7 +13,6 @@ import { AdminEvents } from "@/pages/admin/AdminEvents";
 import { LeaguesHub } from "@/pages/leagues/LeaguesHub";
 import { CreateLeague } from "@/pages/leagues/CreateLeague";
 import { LeagueDashboard } from "@/pages/leagues/LeagueDashboard";
-import { SurvivorProvider } from "@/context/SurvivorContext";
 import { SurvivorPick } from "@/pages/survivor/SurvivorPick";
 import { FightCardShowcase } from "@/pages/FightCardShowcase";
 
@@ -40,6 +39,9 @@ function AppContent() {
               Reforged
             </Badge>
           </div>
+
+          {/* Portal Target for dynamic page headers */}
+          <div id="header-center-portal" className="flex-1 flex justify-center items-center px-4 overflow-hidden" />
 
           <div className="flex items-center gap-4">
             {user ? (
@@ -94,10 +96,8 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <SurvivorProvider>
-          <AppContent />
-          <Toaster position="top-center" richColors />
-        </SurvivorProvider>
+        <AppContent />
+        <Toaster position="top-center" richColors />
       </AuthProvider>
     </Router>
   );

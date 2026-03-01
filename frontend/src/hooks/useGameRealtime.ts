@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { toast } from 'sonner';
 
 export function useGameRealtime(leagueId?: string) {
     const queryClient = useQueryClient();
@@ -37,7 +36,7 @@ export function useGameRealtime(leagueId?: string) {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'fights' },
-                (payload) => {
+                () => {
 
                     // Update events/fights cache
                     queryClient.invalidateQueries({ queryKey: ['events'] });
@@ -48,14 +47,13 @@ export function useGameRealtime(leagueId?: string) {
             .on(
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'bets', filter: `leagueId=eq.${leagueId}` },
-                (payload) => {
+                () => {
 
                     // Update bets cache
                     queryClient.invalidateQueries({ queryKey: ['bets', leagueId] });
-                    toast.info('New bet placed!');
                 }
             )
-            .subscribe((status, _err) => {
+            .subscribe((status) => {
                 // console.log(`[Realtime] Subscription status: ${status}`, err ? err : '');
 
 
@@ -64,7 +62,7 @@ export function useGameRealtime(leagueId?: string) {
 
                     if (pollingInterval) {
                         clearInterval(pollingInterval);
-                        // @ts-ignore
+                        // @ts-expect-error Clear reference
                         pollingInterval = undefined; // Clear the reference
                     }
                 }

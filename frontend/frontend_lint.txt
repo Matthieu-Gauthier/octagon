@@ -1,0 +1,175 @@
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/@/components/ui/badge.tsx
+  36:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/@/components/ui/button.tsx
+  57:18  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/@/components/ui/form.tsx
+  168:3  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/BettingForm.tsx
+  65:28  warning  Compilation Skipped: Use of incompatible library
+
+This API returns functions which cannot be memoized without leading to stale UI. To prevent this, by default React Compiler will skip memoizing this component/hook. However, you may see issues if values from this API are passed to other components/hooks that are memoized.
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/BettingForm.tsx:65:28
+  63 |     }
+  64 |
+> 65 |     const selectedWinner = form.watch("winnerId");
+     |                            ^^^^ React Hook Form's `useForm()` API returns a `watch()` function which cannot be memoized safely.
+  66 |     const isMethodSelected = !!form.watch("method");
+  67 |
+  68 |     return (  react-hooks/incompatible-library
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/FightCard.tsx
+  163:9   error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/FightCard.tsx:163:9
+  161 |     // Sync from external value
+  162 |     useEffect(() => {
+> 163 |         setWinner(value?.winnerId ?? null);
+      |         ^^^^^^^^^ Avoid calling setState() directly within an effect
+  164 |         setMethod((value?.method as Method) ?? null);
+  165 |         setRound(value?.round ?? null);
+  166 |     }, [value?.winnerId, value?.method, value?.round]);  react-hooks/set-state-in-effect
+  179:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/FightCard.tsx:179:13
+  177 |             return () => clearTimeout(timer);
+  178 |         } else if (!isComplete) {
+> 179 |             setShowDrawer(true);
+      |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  180 |         }
+  181 |     }, [isComplete, method, round, mode, isLocked]);
+  182 |                                                                 react-hooks/set-state-in-effect
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/ui/badge.tsx
+  36:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/components/ui/input.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/context/AuthContext.tsx
+  71:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/context/LeagueContext.tsx
+  78:17  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/hooks/useAdminFights.ts
+  25:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/hooks/useBets.ts
+  44:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  64:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/hooks/useGameRealtime.ts
+  39:18  error  '_payload' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  50:18  error  '_payload' is defined but never used                                                                                 @typescript-eslint/no-unused-vars
+  56:33  error  '_err' is defined but never used                                                                                     @typescript-eslint/no-unused-vars
+  65:25  error  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  @typescript-eslint/ban-ts-comment
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/hooks/useLeagues.ts
+  38:21  error  '_data' is defined but never used         @typescript-eslint/no-unused-vars
+  43:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  61:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/FightCardShowcase.tsx
+  81:13  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/FightCardShowcase.tsx:81:13
+  79 |             return () => clearTimeout(timer);
+  80 |         } else {
+> 81 |             setShowDrawer(true);
+     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  82 |         }
+  83 |     }, [isComplete, method, round]);
+  84 |  react-hooks/set-state-in-effect
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/admin/AdminResults.tsx
+   24:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/admin/AdminResults.tsx:24:13
+  22 |     useEffect(() => {
+  23 |         if (events && events.length > 0 && !currentEventId) {
+> 24 |             setCurrentEventId(events[0].id);
+     |             ^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  25 |         }
+  26 |     }, [events]);
+  27 |  react-hooks/set-state-in-effect
+   26:8   warning  React Hook useEffect has a missing dependency: 'currentEventId'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/exhaustive-deps
+   45:32  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+   52:40  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  129:40  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  185:37  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/leagues/CreateLeague.tsx
+  39:18  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/leagues/LeagueDashboard.tsx
+  258:68  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:61  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  277:69  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  286:57  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/leagues/LeaguesHub.tsx
+  22:18  error  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/survivor/SurvivorHub.tsx
+  18:31  error  '_eventId' is defined but never used  @typescript-eslint/no-unused-vars
+  19:29  error  '_eventId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/survivor/SurvivorPick.tsx
+  13:23  error    '_eventId' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  13:41  error    '_fightId' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  13:59  error    '_fighterId' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+  14:11  warning  The 'getPicksForEvent' function makes the dependencies of useEffect Hook (at line 30) change on every render. Move it inside the useEffect callback. Alternatively, wrap the definition of 'getPicksForEvent' in its own useCallback() Hook                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+  14:31  error    '_eventId' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  28:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/mnt/c/Users/xgotg/OneDrive/Documents/git/octagon/frontend/src/pages/survivor/SurvivorPick.tsx:28:13
+  26 |             const initialSelections: Record<string, string> = {};
+  27 |             existingPicks.forEach(p => { initialSelections[p.fightId] = p.fighterId; });
+> 28 |             setSelections(initialSelections);
+     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  29 |         }
+  30 |     }, [event, eventId, getPicksForEvent]);
+  31 |  react-hooks/set-state-in-effect
+
+✖ 42 problems (39 errors, 3 warnings)
+

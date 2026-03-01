@@ -1,23 +1,9 @@
-import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Check, X, ChevronLeft, RotateCcw, Flame, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Check, Flame, X } from "lucide-react";
 
-// ============================================================================
-// TYPES & DATA
-// ============================================================================
-type Method = "KO/TKO" | "SUBMISSION" | "DECISION";
-type SelectionVariant = "inline-strip" | "full-panel" | "bottom-drawer" | "segmented";
-
-const METHODS: { value: Method; short: string; icon: string; label: string }[] = [
-    { value: "KO/TKO", short: "KO", icon: "💥", label: "KO / TKO" },
-    { value: "SUBMISSION", short: "SUB", icon: "🔒", label: "Submission" },
-    { value: "DECISION", short: "DEC", icon: "📋", label: "Decision" },
-];
-
-const FALLBACK_IMAGE = "/fighter-silhouette.png";
-
-const fight = {
+// Mock Data
+const f = {
     id: "f1",
     division: "Middleweight",
     rounds: 5,
@@ -32,529 +18,246 @@ const fight = {
         name: "Anthony Hernandez",
         record: "12-2-0",
         imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/HERNANDEZ_ANTHONY_L_10-19.png?itok=6ys_gZcX",
-    },
+    }
 };
 
-const fightNoImages = {
-    id: "f2",
-    division: "Lightweight",
-    rounds: 3,
-    fighterA: {
-        id: "fc",
-        name: "John Doe",
-        record: "10-3-0",
-        imageUrl: "",
-    },
-    fighterB: {
-        id: "fd",
-        name: "James Smith",
-        record: "8-2-0",
-        imageUrl: "",
-    },
-};
+const resultText = "Hernandez (SUB R2)";
 
 // ============================================================================
-// CARD COMPONENT (shared across all variants)
+// RESULT CENTER DESIGNS
 // ============================================================================
-interface ShowcaseCardProps {
-    height?: string;
-    eventType?: "main" | "comain" | "standard";
-    selectionVariant: SelectionVariant;
-    customFight?: typeof fight;
+
+function ResultCenterV1({ pick, points, isWinnerCorrect }: { pick: string, points: number, isWinnerCorrect: boolean }) {
+    return (
+        <div className="flex flex-col items-center justify-center w-[180px] pb-8 pt-4">
+            <div className="flex flex-col items-center mb-3">
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-1">
+                    Points Earned
+                </span>
+                <span className={cn(
+                    "text-4xl font-black drop-shadow-lg",
+                    points > 0 ? "text-yellow-500" : "text-zinc-700"
+                )}>
+                    +{points}
+                </span>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full mt-2">
+                <div className="flex flex-col items-center justify-center text-center bg-zinc-900/80 p-2.5 rounded-t-xl border border-zinc-800 border-b-0 backdrop-blur-sm">
+                    <span className="text-zinc-500 font-bold uppercase tracking-widest text-[8px] mb-1">Your Pick</span>
+                    <span className={cn("font-black text-[11px] leading-tight", isWinnerCorrect ? "text-blue-400" : "text-red-400 line-through opacity-80")}>
+                        {pick}
+                    </span>
+                </div>
+                <div className="flex flex-col items-center justify-center text-center bg-emerald-950/30 p-2.5 rounded-b-xl border border-emerald-900/50 backdrop-blur-sm">
+                    <span className="text-emerald-500/70 font-bold uppercase tracking-widest text-[8px] mb-1">Actual Result</span>
+                    <span className="text-emerald-400 font-black text-[11px] leading-tight">{resultText}</span>
+                </div>
+            </div>
+        </div>
+    );
 }
 
-function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionVariant, customFight }: ShowcaseCardProps) {
-    const f = customFight || fight;
-    const [winner, setWinner] = useState<string | null>(null);
-    const [method, setMethod] = useState<Method | null>(null);
-    const [round, setRound] = useState<number | null>(null);
-    const [showDrawer, setShowDrawer] = useState(true);
+function ResultCenterV2({ pick, points, isPerfect, isWinnerCorrect }: { pick: string, points: number, isPerfect: boolean, isWinnerCorrect: boolean }) {
+    return (
+        <div className="flex flex-col items-center justify-center w-[180px] h-full relative">
+            {isPerfect && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                    <span className="text-5xl font-black italic text-emerald-500/10 -rotate-12 tracking-tighter uppercase whitespace-nowrap">
+                        Perfect
+                    </span>
+                </div>
+            )}
 
-    const isComplete = !!winner && !!method && (method === "DECISION" || !!round);
+            <div className="relative z-10 glass-panel rounded-2xl p-4 flex flex-col items-center border border-white/5 bg-black/40 backdrop-blur-md shadow-2xl w-full">
+                <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center mb-2 shadow-inner border",
+                    isPerfect ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400" :
+                        isWinnerCorrect ? "bg-blue-500/20 border-blue-500/50 text-blue-400" :
+                            "bg-red-500/10 border-red-500/30 text-red-500/80"
+                )}>
+                    {isWinnerCorrect ? <Check className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                </div>
 
-    // Auto-close drawer 1s after pick is complete
-    useEffect(() => {
-        if (isComplete) {
-            const timer = setTimeout(() => setShowDrawer(false), 1000);
-            return () => clearTimeout(timer);
-        } else {
-            setShowDrawer(true);
-        }
-    }, [isComplete, method, round]);
+                <span className={cn(
+                    "text-3xl font-black mb-3 leading-none",
+                    points > 0 ? (isPerfect ? "text-emerald-400" : "text-white") : "text-red-500/80"
+                )}>
+                    {points} <span className="text-xs text-zinc-500 font-bold tracking-widest uppercase">PTS</span>
+                </span>
 
-    const handleFighterClick = (id: string, e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest('.selection-area')) return;
-        if (winner === id) {
-            setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
-        } else {
-            setWinner(id); setMethod(null); setRound(null); setShowDrawer(true);
-        }
-    };
+                <div className="w-full h-px bg-white/10 mb-3" />
 
-    const pickMethod = (m: Method) => { setMethod(method === m ? null : m); setRound(null); };
-    const pickRound = (r: number) => { setRound(round === r ? null : r); };
-    const reset = (e?: React.MouseEvent) => {
-        e?.stopPropagation();
-        setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
-    };
-
-    const getShortSummary = () => {
-        if (!method) return null;
-        const methodText = method === "SUBMISSION" ? "Submission" : method === "DECISION" ? "Decision" : method;
-        if (method === "DECISION") return methodText;
-        return `${methodText} - Round ${round}`;
-    };
-
-    const containerClass = cn(
-        "w-full max-w-3xl mx-auto rounded-2xl overflow-hidden border bg-zinc-950 shadow-2xl relative transition-all duration-500",
-        eventType === "main" ? "border-red-500/40" : eventType === "comain" ? "border-zinc-700" : "border-zinc-800"
+                <div className="w-full flex justify-between items-center text-[9px] mb-1">
+                    <span className="font-bold text-zinc-500 uppercase tracking-widest">Pick</span>
+                    <span className={cn("font-bold truncate text-right max-w-[90px]", isWinnerCorrect ? "text-white" : "text-zinc-500 line-through")}>{pick}</span>
+                </div>
+                <div className="w-full flex justify-between items-center text-[9px]">
+                    <span className="font-bold text-zinc-500 uppercase tracking-widest">Result</span>
+                    <span className="font-bold text-white truncate text-right max-w-[90px]">{resultText}</span>
+                </div>
+            </div>
+        </div>
     );
+}
 
-    const imgHeight = "h-[90%]";
+function ResultCenterV3({ pick, points, isWinnerCorrect }: { pick: string, points: number, isWinnerCorrect: boolean }) {
+    return (
+        <div className="flex flex-col items-center justify-center w-full h-full relative">
+            <div className="w-px h-full bg-gradient-to-b from-transparent via-zinc-800 to-transparent absolute left-1/2 -translate-x-1/2" />
+
+            <div className="flex flex-col items-center z-10 bg-zinc-950 px-5 py-3 rounded-full border-2 border-zinc-800 shadow-2xl">
+                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-0.5">Earned</span>
+                <span className={cn("text-3xl font-black leading-none", points > 0 ? "text-yellow-500" : "text-zinc-600")}>+{points}</span>
+            </div>
+
+            <div className="absolute top-1/2 -translate-y-1/2 inset-x-0 flex justify-between px-10 pointer-events-none mt-16">
+                <div className="flex flex-col items-start bg-zinc-950/80 p-2 rounded backdrop-blur border border-zinc-800/50">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500">My Pick</span>
+                    <span className={cn("text-[10px] font-bold", isWinnerCorrect ? "text-blue-400" : "text-red-400 line-through")}>{pick}</span>
+                </div>
+                <div className="flex flex-col items-end bg-emerald-950/80 p-2 rounded backdrop-blur border border-emerald-900/50">
+                    <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500/70">Result</span>
+                    <span className="text-[10px] font-bold text-emerald-400 text-right">{resultText}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ============================================================================
+// CARD COMPONENT
+// ============================================================================
+
+function FinishedShowcaseCard({ variant, pick, points, isPerfect, isWinnerCorrect }: { variant: "v1" | "v2" | "v3", pick: string, points: number, isPerfect: boolean, isWinnerCorrect: boolean }) {
 
     return (
-        <div className={containerClass}>
+        <div className="w-full max-w-3xl mx-auto rounded-2xl overflow-hidden border border-red-500/40 bg-zinc-950 shadow-2xl relative h-[400px]">
             {/* EVENT HEADER */}
             <div className="absolute top-0 inset-x-0 z-20 pointer-events-none">
-                {eventType === "main" && (
-                    <div className="bg-gradient-to-r from-zinc-950/95 via-red-950/90 to-zinc-950/95 py-1.5 border-b border-red-500/20 backdrop-blur-sm flex items-center justify-between px-3">
-                        <div className="flex items-center gap-1.5">
-                            <Flame className="h-3 w-3 text-red-500 fill-red-500/20" />
-                            <span className="text-[9px] font-black tracking-[0.2em] uppercase text-red-100 drop-shadow-sm">Main Event</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.division}</Badge>
-                            <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.rounds} RND</Badge>
-                        </div>
+                <div className="bg-gradient-to-r from-zinc-950/95 via-red-950/90 to-zinc-950/95 py-1.5 border-b border-red-500/20 backdrop-blur-sm flex items-center justify-between px-3">
+                    <div className="flex items-center gap-1.5">
+                        <Flame className="h-3 w-3 text-red-500 fill-red-500/20" />
+                        <span className="text-[9px] font-black tracking-[0.2em] uppercase text-red-100 drop-shadow-sm">Main Event</span>
                     </div>
-                )}
-                {eventType === "comain" && (
-                    <div className="bg-gradient-to-r from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 py-1.5 border-b border-zinc-700/50 backdrop-blur-sm flex items-center justify-between px-3">
-                        <div className="flex items-center gap-1.5">
-                            <Shield className="h-3 w-3 text-zinc-400 fill-zinc-400/20" />
-                            <span className="text-[9px] font-black tracking-[0.2em] uppercase text-zinc-300 drop-shadow-sm">Co-Main Event</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.division}</Badge>
-                            <Badge variant="outline" className="h-5 bg-black/40 border-zinc-700 text-zinc-300 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.rounds} RND</Badge>
-                        </div>
+                    <div className="absolute left-1/2 -translate-x-1/2">
+                        <Badge variant="outline" className="bg-zinc-800/80 text-zinc-400 border-zinc-700 text-[10px] backdrop-blur-md shadow-lg shadow-black/50 py-0 h-5">FINISHED</Badge>
                     </div>
-                )}
-                {eventType === "standard" && (
-                    <div className="flex justify-between items-start p-3 bg-gradient-to-b from-zinc-950/80 to-transparent">
-                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{f.division}</Badge>
-                        <Badge variant="outline" className="bg-zinc-950/50 backdrop-blur border-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 font-bold uppercase tracking-tight">{f.rounds} RND</Badge>
+                    <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.division}</Badge>
+                        <Badge variant="outline" className="h-5 bg-black/40 border-red-500/20 text-red-100/80 text-[10px] font-bold px-2 py-0.5 uppercase tracking-tight">{f.rounds} RND</Badge>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Fighters Area */}
-            <div className={cn("grid grid-cols-2 relative transition-all", height)}>
-                {/* Fighter A */}
-                <div
-                    onClick={(e) => handleFighterClick(f.fighterA.id, e)}
-                    className={cn(
-                        "relative group cursor-pointer overflow-hidden transition-all duration-500",
-                        winner === f.fighterA.id ? "bg-red-900/20" : "hover:bg-zinc-900/10",
-                        winner === f.fighterB.id && "grayscale opacity-50",
-                        !winner && "grayscale"
-                    )}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-tr from-red-600/10 to-transparent opacity-30" />
-                    <img src={f.fighterA.imageUrl || FALLBACK_IMAGE} alt={f.fighterA.name}
-                        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                        className={cn(
-                            "absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-700 ease-out origin-bottom object-contain pointer-events-none",
-                            imgHeight,
-                            winner === f.fighterA.id ? "scale-105 drop-shadow-[0_0_25px_rgba(220,38,38,0.4)]" : "scale-100 group-hover:scale-105"
-                        )}
-                    />
-                    <div className="absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none">
-                        <div className="transition-transform duration-300 origin-bottom-left group-hover:scale-105 mb-1">
-                            {winner === f.fighterA.id && (
-                                <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
-                            )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
-                                {f.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
-                            </h3>
-                            <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{f.fighterA.record}</p>
-                            {winner === f.fighterA.id && isComplete && (
-                                <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
-                                    <Check className="w-2.5 h-2.5 text-red-400" />
-                                    <span className="text-[9px] font-black text-red-200 uppercase tracking-wide">{getShortSummary()}</span>
-                                </div>
-                            )}
-                        </div>
+            <div className="grid grid-cols-2 relative h-full">
+                {/* MATCH RESULT CENTER (Replaces stats) */}
+                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center justify-center w-full max-w-[220px]">
+                    {variant === "v1" && <ResultCenterV1 pick={pick} points={points} isWinnerCorrect={isWinnerCorrect} />}
+                    {variant === "v2" && <ResultCenterV2 pick={pick} points={points} isPerfect={isPerfect} isWinnerCorrect={isWinnerCorrect} />}
+                    {variant === "v3" && <ResultCenterV3 pick={pick} points={points} isWinnerCorrect={isWinnerCorrect} />}
+                </div>
+
+                {/* Fighter A (Loser) */}
+                <div className="relative group overflow-hidden grayscale opacity-60">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-zinc-600/10 to-transparent opacity-30" />
+                    <img src={f.fighterA.imageUrl} alt={f.fighterA.name} className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[90%] object-contain pointer-events-none" />
+                    <div className="absolute bottom-0 left-0 w-full p-4 pb-4 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent flex flex-col justify-end h-full">
+                        <h3 className="text-2xl sm:text-3xl font-black italic uppercase leading-[0.85] text-zinc-400">
+                            {f.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
+                        </h3>
                     </div>
                 </div>
 
-                {/* VS Badge */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-                    <div className={cn(
-                        "flex items-center justify-center w-8 h-8 rounded-full font-black italic text-xs transition-all shadow-2xl duration-500",
-                        winner ? "bg-zinc-900 text-zinc-600 scale-75 border border-zinc-700" : "bg-white text-black scale-100 border-2 border-zinc-950"
-                    )}>
-                        <span className="-ml-0.5 mt-0.5">VS</span>
-                    </div>
-                </div>
-
-                {/* Fighter B */}
-                <div
-                    onClick={(e) => handleFighterClick(f.fighterB.id, e)}
-                    className={cn(
-                        "relative group cursor-pointer overflow-hidden transition-all duration-500",
-                        winner === f.fighterB.id ? "bg-blue-900/20" : "hover:bg-zinc-900/10",
-                        winner === f.fighterA.id && "grayscale opacity-50",
-                        !winner && "grayscale"
-                    )}
-                >
-                    <div className="absolute inset-0 bg-gradient-to-tl from-blue-600/10 to-transparent opacity-30" />
-                    <img src={f.fighterB.imageUrl || FALLBACK_IMAGE} alt={f.fighterB.name}
-                        onError={(e) => { (e.target as HTMLImageElement).src = FALLBACK_IMAGE; }}
-                        className={cn(
-                            "absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-700 ease-out origin-bottom object-contain pointer-events-none",
-                            imgHeight,
-                            winner === f.fighterB.id ? "scale-105 drop-shadow-[0_0_25px_rgba(37,99,235,0.4)]" : "scale-100 group-hover:scale-105"
-                        )}
-                    />
-                    <div className="absolute bottom-0 right-0 w-full p-4 pb-4 text-right bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent flex flex-col justify-end h-full pointer-events-none">
-                        <div className="flex flex-col items-end transition-transform duration-300 origin-bottom-right group-hover:scale-105 mb-1">
-                            {winner === f.fighterB.id && (
-                                <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
-                            )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
+                {/* VS Badge removed from Finished state */}
+                <div className="relative group overflow-hidden bg-blue-900/10">
+                    <div className="absolute inset-0 bg-gradient-to-tl from-blue-600/20 to-transparent opacity-30" />
+                    <img src={f.fighterB.imageUrl} alt={f.fighterB.name} className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[90%] scale-105 drop-shadow-[0_0_25px_rgba(37,99,235,0.4)] object-contain pointer-events-none" />
+                    <div className="absolute bottom-0 right-0 w-full p-4 pb-4 text-right flex flex-col justify-end h-full">
+                        <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-blue-950/90 via-blue-950/30 to-transparent z-0" />
+                        <div className="relative z-10 flex flex-col items-end">
+                            <Badge className="bg-amber-500 text-black border-0 text-[10px] mb-1 shadow-lg shadow-amber-900/50 px-2 uppercase tracking-widest font-black">WINNER</Badge>
+                            <h3 className="text-2xl sm:text-3xl font-black italic uppercase leading-[0.85] text-white drop-shadow-2xl text-right">
                                 {f.fighterB.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
                             </h3>
-                            <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{f.fighterB.record}</p>
-                            {winner === f.fighterB.id && isComplete && (
-                                <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
-                                    <Check className="w-2.5 h-2.5 text-blue-400" />
-                                    <span className="text-[9px] font-black text-blue-200 uppercase tracking-wide">{getShortSummary()}</span>
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
             </div>
-
-            {/* ============================================================== */}
-            {/* SELECTION AREA — switches based on selectionVariant           */}
-            {/* ============================================================== */}
-
-            {/* ── VARIANT A: Inline Strip (existing, baseline) ── */}
-            {selectionVariant === "inline-strip" && winner && showDrawer && (
-                <div className="selection-area bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 animate-in slide-in-from-bottom-4 duration-200 relative z-40">
-                    <div className="flex items-center h-9 px-2 gap-1">
-                        {!method && (
-                            <>
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider mr-1 shrink-0">How</span>
-                                {METHODS.map((m) => (
-                                    <button key={m.value} onClick={() => pickMethod(m.value)}
-                                        className="px-2 py-1 rounded text-[9px] font-bold bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white hover:bg-zinc-800/80 transition-all active:scale-95 whitespace-nowrap cursor-pointer">
-                                        {m.icon} {m.short}
-                                    </button>
-                                ))}
-                                <div className="flex-1" />
-                                <button onClick={() => reset()} className="text-zinc-600 hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-900 cursor-pointer"><X className="h-3 w-3" /></button>
-                            </>
-                        )}
-                        {method && method !== "DECISION" && !round && (
-                            <>
-                                <span className="text-[8px] font-bold text-zinc-600 uppercase tracking-wider mr-1 shrink-0">Rnd</span>
-                                {Array.from({ length: f.rounds }).map((_, i) => (
-                                    <button key={i} onClick={() => pickRound(i + 1)}
-                                        className="px-2 py-1 rounded text-[9px] font-black bg-zinc-900/60 border border-zinc-800 text-zinc-400 hover:border-zinc-600 hover:text-white hover:bg-zinc-800/80 transition-all active:scale-95 cursor-pointer">
-                                        R{i + 1}
-                                    </button>
-                                ))}
-                                <div className="flex-1" />
-                                <button onClick={() => setMethod(null)} className="text-zinc-600 hover:text-zinc-300 transition-colors p-1 rounded hover:bg-zinc-900 cursor-pointer"><ChevronLeft className="h-3 w-3" /></button>
-                                <button onClick={() => reset()} className="text-zinc-600 hover:text-red-400 transition-colors p-1 rounded hover:bg-zinc-900 cursor-pointer"><X className="h-3 w-3" /></button>
-                            </>
-                        )}
-                        {isComplete && (
-                            <>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="bg-green-500 rounded-full p-0.5"><Check className="h-2 w-2 text-black" /></div>
-                                    <span className="text-[9px] font-bold text-green-400 uppercase tracking-wider">{getShortSummary()}</span>
-                                </div>
-                                <div className="flex-1" />
-                                <button onClick={() => reset()} className="text-[8px] uppercase font-bold text-zinc-600 hover:text-red-400 transition-colors flex items-center gap-0.5 px-1.5 py-0.5 rounded hover:bg-zinc-900 cursor-pointer">
-                                    <RotateCcw className="h-2.5 w-2.5" /> Reset
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ── VARIANT B: Full-Width Panel (large buttons below card) ── */}
-            {selectionVariant === "full-panel" && winner && showDrawer && (
-                <div className="selection-area bg-zinc-900/95 border-t border-zinc-800 animate-in slide-in-from-bottom-4 duration-300 relative z-40">
-                    {!isComplete ? (
-                        <div className="p-4 space-y-3">
-                            {/* Method row */}
-                            <div>
-                                <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">
-                                    {!method ? "How does it end?" : `${METHODS.find(m => m.value === method)?.icon} ${method} — Which round?`}
-                                </p>
-                                {!method ? (
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {METHODS.map((m) => (
-                                            <button key={m.value} onClick={() => pickMethod(m.value)}
-                                                className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl bg-zinc-800/60 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-600 hover:text-white transition-all active:scale-95 cursor-pointer">
-                                                <span className="text-xl">{m.icon}</span>
-                                                <span className="text-[11px] font-bold uppercase tracking-wide">{m.label}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : method !== "DECISION" ? (
-                                    <div className="flex gap-2">
-                                        {Array.from({ length: f.rounds }).map((_, i) => (
-                                            <button key={i} onClick={() => pickRound(i + 1)}
-                                                className="flex-1 py-3 rounded-xl text-sm font-black bg-zinc-800/60 border border-zinc-700/50 text-zinc-300 hover:bg-zinc-700/60 hover:border-zinc-600 hover:text-white transition-all active:scale-95 cursor-pointer">
-                                                R{i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : null}
-                            </div>
-                            <div className="flex justify-between items-center">
-                                {method && (
-                                    <button onClick={() => setMethod(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer">
-                                        <ChevronLeft className="h-3 w-3" /> Back
-                                    </button>
-                                )}
-                                <button onClick={() => reset()} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 ml-auto cursor-pointer">
-                                    <RotateCcw className="h-3 w-3" /> Reset
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between p-3">
-                            <div className="flex items-center gap-2">
-                                <div className="bg-green-500 rounded-full p-0.5"><Check className="h-3 w-3 text-black" /></div>
-                                <span className="text-xs font-bold text-green-400 uppercase tracking-wider">{getShortSummary()}</span>
-                                <span className="text-[10px] text-zinc-500">Pick locked in</span>
-                            </div>
-                            <button onClick={() => reset()} className="text-[10px] uppercase font-bold text-zinc-600 hover:text-red-400 flex items-center gap-1 cursor-pointer">
-                                <RotateCcw className="h-3 w-3" /> Reset
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* ── VARIANT C: Bottom Drawer (glassmorphism overlay) ── */}
-            {selectionVariant === "bottom-drawer" && winner && showDrawer && (
-                <div className="selection-area absolute bottom-0 inset-x-0 z-40 animate-in slide-in-from-bottom-8 duration-300">
-                    {/* Backdrop gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pointer-events-none" />
-                    <div className="relative backdrop-blur-xl p-4 pt-6">
-                        {/* Handle */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-zinc-700" />
-
-                        {!isComplete ? (
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider text-center">
-                                    {!method ? "How does it end?" : `${METHODS.find(m => m.value === method)?.icon} ${method} — Which round?`}
-                                </p>
-                                {!method ? (
-                                    <div className="flex gap-2 justify-center">
-                                        {METHODS.map((m) => (
-                                            <button key={m.value} onClick={() => pickMethod(m.value)}
-                                                className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
-                                                <span className="text-base">{m.icon}</span>
-                                                <span className="text-[11px] font-bold uppercase tracking-wide">{m.short}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : method !== "DECISION" ? (
-                                    <div className="flex gap-2 justify-center">
-                                        {Array.from({ length: f.rounds }).map((_, i) => (
-                                            <button key={i} onClick={() => pickRound(i + 1)}
-                                                className="w-12 h-12 rounded-full text-sm font-black bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
-                                                R{i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : null}
-                                <div className="flex justify-center gap-4 pt-1">
-                                    {method && (
-                                        <button onClick={() => setMethod(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer">
-                                            <ChevronLeft className="h-3 w-3" /> Back
-                                        </button>
-                                    )}
-                                    <button onClick={() => reset()} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 cursor-pointer">
-                                        <RotateCcw className="h-3 w-3" /> Reset
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center gap-3 py-1">
-                                <div className="bg-green-500 rounded-full p-0.5"><Check className="h-3 w-3 text-black" /></div>
-                                <span className="text-sm font-black text-green-400 uppercase tracking-wider">{getShortSummary()}</span>
-                                <button onClick={() => reset()} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 ml-2 cursor-pointer">
-                                    <RotateCcw className="h-3 w-3" /> Change
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* ── VARIANT D: Segmented Control (iOS-style) ── */}
-            {selectionVariant === "segmented" && winner && showDrawer && (
-                <div className="selection-area bg-zinc-900 border-t border-zinc-800 animate-in slide-in-from-bottom-4 duration-300 relative z-40">
-                    {!isComplete ? (
-                        <div className="p-3 space-y-2">
-                            {/* Method segmented row */}
-                            {!method ? (
-                                <div>
-                                    <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider mb-1.5 text-center">Method</p>
-                                    <div className="flex bg-zinc-800/80 rounded-lg p-1 gap-0.5">
-                                        {METHODS.map((m) => (
-                                            <button key={m.value} onClick={() => pickMethod(m.value)}
-                                                className="flex-1 py-2 rounded-md text-[11px] font-bold text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all active:scale-[0.97] cursor-pointer flex items-center justify-center gap-1.5">
-                                                <span>{m.icon}</span>
-                                                <span>{m.short}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : method !== "DECISION" ? (
-                                <div>
-                                    <div className="flex items-center justify-between mb-1.5">
-                                        <button onClick={() => setMethod(null)} className="text-[9px] text-zinc-500 hover:text-zinc-300 flex items-center gap-0.5 cursor-pointer">
-                                            <ChevronLeft className="h-3 w-3" /> Method
-                                        </button>
-                                        <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">
-                                            {METHODS.find(m => m.value === method)?.icon} {method} — Round
-                                        </p>
-                                        <div className="w-12" />
-                                    </div>
-                                    <div className="flex bg-zinc-800/80 rounded-lg p-1 gap-0.5">
-                                        {Array.from({ length: f.rounds }).map((_, i) => (
-                                            <button key={i} onClick={() => pickRound(i + 1)}
-                                                className="flex-1 py-2 rounded-md text-[11px] font-black text-zinc-400 hover:text-white hover:bg-zinc-700 transition-all active:scale-[0.97] cursor-pointer">
-                                                R{i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : null}
-                            <div className="flex justify-end">
-                                <button onClick={() => reset()} className="text-[9px] text-zinc-600 hover:text-red-400 flex items-center gap-0.5 cursor-pointer">
-                                    <RotateCcw className="h-2.5 w-2.5" /> Reset
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="flex items-center justify-between px-3 py-2.5">
-                            <div className="flex items-center gap-2">
-                                <div className="flex bg-green-500/15 rounded-lg px-3 py-1.5 items-center gap-1.5 border border-green-500/20">
-                                    <Check className="h-3 w-3 text-green-400" />
-                                    <span className="text-[11px] font-black text-green-400 uppercase tracking-wide">{getShortSummary()}</span>
-                                </div>
-                            </div>
-                            <button onClick={() => reset()} className="text-[9px] uppercase font-bold text-zinc-600 hover:text-red-400 flex items-center gap-1 cursor-pointer">
-                                <RotateCcw className="h-3 w-3" /> Reset
-                            </button>
-                        </div>
-                    )}
-                </div>
-            )}
         </div>
     );
 }
 
-// ============================================================================
-// SHOWCASE PAGE
-// ============================================================================
 export function FightCardShowcase() {
     return (
-        <div className="space-y-16 max-w-4xl mx-auto py-8 pb-24">
-            {/* ── TITLE ── */}
-            <div className="text-center space-y-2">
-                <h1 className="text-3xl font-black uppercase tracking-tight text-red-600">🥊 Fight Card Showcase</h1>
-                <p className="text-muted-foreground text-sm">
-                    Bottom Drawer selection + silhouette fallback.
-                </p>
-            </div>
+        <div className="min-h-screen bg-black text-white p-4 sm:p-8 font-sans pb-32">
+            <div className="max-w-5xl mx-auto space-y-16">
 
-
-            {/* ── SECTION 2: CARD SIZES ── */}
-            <div className="space-y-12">
-                <div className="flex items-center justify-center">
-                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
-                    <span className="px-4 text-zinc-500 font-mono text-xs uppercase tracking-widest whitespace-nowrap">Card Sizes</span>
-                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                <div className="text-center space-y-4 pt-10">
+                    <h1 className="text-3xl sm:text-5xl font-black italic uppercase tracking-tighter">Finished Card Center UI</h1>
+                    <p className="text-zinc-400 max-w-xl mx-auto">
+                        Proposals for replacing the Physical Stats / Wins by Method with the user's pick result when a fight is marked as FINISHED.
+                    </p>
                 </div>
 
-                {/* Micro 220px */}
+                {/* DESIGN A: Clean Stack */}
                 <section className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <span className="bg-purple-600 text-white text-xs font-bold px-2.5 py-1 rounded">Micro</span>
-                        <div>
-                            <h3 className="text-lg font-bold">Micro Fight (220px)</h3>
-                            <p className="text-xs text-zinc-500">Test extrême pour voir si ça tient la route.</p>
-                        </div>
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-white mb-1"><span className="text-blue-500 mr-2">V1</span>Clean Stack</h3>
+                        <p className="text-xs text-zinc-500">Simple vertical layout with a clear hierarchy. Points first, then pick vs result.</p>
                     </div>
-                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
-                        <ShowcaseCard height="h-[220px]" eventType="standard" selectionVariant="bottom-drawer" />
+
+                    {/* Perfect Pick */}
+                    <div className="p-6 bg-zinc-900/30 rounded-3xl border border-zinc-800">
+                        <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-widest text-center mb-4">Example: Perfect Pick</h4>
+                        <FinishedShowcaseCard variant="v1" pick="Hernandez (SUB R2)" points={25} isPerfect={true} isWinnerCorrect={true} />
+                    </div>
+
+                    {/* Wrong Picker */}
+                    <div className="p-6 bg-zinc-900/30 rounded-3xl border border-zinc-800">
+                        <h4 className="text-xs font-bold text-red-500 uppercase tracking-widest text-center mb-4">Example: Completely Wrong</h4>
+                        <FinishedShowcaseCard variant="v1" pick="Strickland (DEC)" points={0} isPerfect={false} isWinnerCorrect={false} />
                     </div>
                 </section>
 
-                {/* Small 300px */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <span className="bg-zinc-100 text-zinc-950 text-xs font-bold px-2.5 py-1 rounded">Small</span>
-                        <div>
-                            <h3 className="text-lg font-bold">Small Fight (300px)</h3>
-                            <p className="text-xs text-zinc-500">Format compact pour les listes denses.</p>
-                        </div>
+                {/* DESIGN B: Glass Pill */}
+                <section className="space-y-4 border-t border-zinc-900 pt-16">
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-white mb-1"><span className="text-blue-500 mr-2">V2</span>Glass Box Status</h3>
+                        <p className="text-xs text-zinc-500">More encapsulated pill design matching our drawer style. Includes an icon check/cross.</p>
                     </div>
-                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
-                        <ShowcaseCard height="h-[300px]" eventType="comain" selectionVariant="bottom-drawer" />
+
+                    {/* Perfect Pick */}
+                    <div className="p-6 bg-zinc-900/30 rounded-3xl border border-zinc-800">
+                        <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-widest text-center mb-4">Example: Perfect Pick</h4>
+                        <FinishedShowcaseCard variant="v2" pick="Hernandez (SUB R2)" points={25} isPerfect={true} isWinnerCorrect={true} />
+                    </div>
+
+                    {/* Okay Pick */}
+                    <div className="p-6 bg-zinc-900/30 rounded-3xl border border-zinc-800">
+                        <h4 className="text-xs font-bold text-yellow-500 uppercase tracking-widest text-center mb-4">Example: Winner Correct, Method Wrong</h4>
+                        <FinishedShowcaseCard variant="v2" pick="Hernandez (KO R1)" points={10} isPerfect={false} isWinnerCorrect={true} />
                     </div>
                 </section>
 
-                {/* Standard 400px */}
-                <section className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <span className="bg-zinc-100 text-zinc-950 text-xs font-bold px-2.5 py-1 rounded">Standard</span>
-                        <div>
-                            <h3 className="text-lg font-bold">Standard Fight (400px)</h3>
-                            <p className="text-xs text-zinc-500">Format principal.</p>
-                        </div>
+                {/* DESIGN C: VS Split */}
+                <section className="space-y-4 border-t border-zinc-900 pt-16">
+                    <div className="text-center">
+                        <h3 className="text-xl font-bold text-white mb-1"><span className="text-blue-500 mr-2">V3</span>Split Centered Badge</h3>
+                        <p className="text-xs text-zinc-500">Floating central badge with pick/result anchored to the sides near the fighters.</p>
                     </div>
-                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
-                        <ShowcaseCard height="h-[400px]" eventType="main" selectionVariant="bottom-drawer" />
+
+                    {/* Perfect Pick */}
+                    <div className="p-6 bg-zinc-900/30 rounded-3xl border border-zinc-800">
+                        <h4 className="text-xs font-bold text-emerald-500 uppercase tracking-widest text-center mb-4">Example: Perfect Pick</h4>
+                        <FinishedShowcaseCard variant="v3" pick="Hernandez (SUB R2)" points={25} isPerfect={true} isWinnerCorrect={true} />
                     </div>
                 </section>
-            </div>
 
-            {/* ── SECTION 2: NO IMAGE FALLBACK ── */}
-            <div className="space-y-12">
-                <div className="flex items-center justify-center">
-                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
-                    <span className="px-4 text-zinc-500 font-mono text-xs uppercase tracking-widest whitespace-nowrap">No Image Fallback</span>
-                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
-                </div>
-
-                <section className="space-y-4">
-                    <div className="flex items-center gap-3">
-                        <span className="bg-zinc-600 text-white text-xs font-bold px-2.5 py-1 rounded">👤</span>
-                        <div>
-                            <h3 className="text-lg font-bold">Silhouette Fallback (400px)</h3>
-                            <p className="text-xs text-zinc-500">Quand il n'y a pas d'image de combattant, une silhouette par défaut s'affiche.</p>
-                        </div>
-                    </div>
-                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
-                        <ShowcaseCard height="h-[400px]" eventType="standard" selectionVariant="bottom-drawer" customFight={fightNoImages} />
-                    </div>
-                </section>
             </div>
         </div>
     );
 }
+
+export default FightCardShowcase;

@@ -1,16 +1,18 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useSurvivor } from "@/context/SurvivorContext";
 import { Button } from "@/components/ui/button";
 import { VegasFightCard } from "@/components/FightCard";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
+// SurvivorContext temporairement désactivé — stubs locaux
+const makePick = (_eventId: string, _fightId: string, _fighterId: string) => { };
+const getPicksForEvent = (_eventId: string): { fightId: string; fighterId: string }[] => [];
+
 export function SurvivorPick() {
     const { eventId } = useParams();
     const navigate = useNavigate();
-    const { makePick, getPicksForEvent } = useSurvivor();
 
     // Fetch Data
     const { data: event, isLoading, error } = useEvent(eventId || "");
@@ -23,10 +25,11 @@ export function SurvivorPick() {
         if (event && eventId) {
             const existingPicks = getPicksForEvent(eventId);
             const initialSelections: Record<string, string> = {};
-            existingPicks.forEach(p => { initialSelections[p.fightId] = p.fighterId; });
+            existingPicks.forEach((p: { fightId: string; fighterId: string }) => { initialSelections[p.fightId] = p.fighterId; });
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelections(initialSelections);
         }
-    }, [event, eventId, getPicksForEvent]);
+    }, [event, eventId]);
 
     if (isLoading) {
         return (
@@ -77,10 +80,10 @@ export function SurvivorPick() {
                     <VegasFightCard
                         key={fight.id}
                         fight={fight}
-
                         mode="winner"
                         value={selections[fight.id] ? { winnerId: selections[fight.id] } : null}
                         onPickChange={(pick) => handlePickChange(fight.id, pick?.winnerId ?? null)}
+                        lockAt={(fight.isPrelim ? event.prelimsStartAt : event.mainCardStartAt) || event.date}
                     />
                 ))}
             </div>

@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EventSelector } from "@/components/EventSelector";
-import { useEvents } from "@/hooks/useEvents";
+import { useEvents, useFetchNextEvent, useRemoveEvent } from "@/hooks/useEvents";
 import { useUpdateFightResult } from "@/hooks/useAdminFights";
 import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, RotateCcw, Trash2 } from "lucide-react";
 
 export function AdminResults() {
     const { data: events, isLoading, error } = useEvents();
     const updateResult = useUpdateFightResult();
+    const fetchEventMutation = useFetchNextEvent();
+    const removeEventMutation = useRemoveEvent();
 
     // Default to first event ID once loaded
     const [currentEventId, setCurrentEventId] = useState<string>("");
@@ -21,6 +23,7 @@ export function AdminResults() {
         if (events && events.length > 0 && !currentEventId) {
             setCurrentEventId(events[0].id);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [events]);
 
     const currentEvent = events?.find(e => e.id === currentEventId);
@@ -33,6 +36,22 @@ export function AdminResults() {
     const [mainCardOpen, setMainCardOpen] = useState(true);
     const [prelimsOpen, setPrelimsOpen] = useState(true);
 
+    const handleRemoveEvent = () => {
+        if (currentEvent && window.confirm(`Are you sure you want to remove ${currentEvent.name}? This will delete all associated fights and bets.`)) {
+            removeEventMutation.mutate(currentEvent.id, {
+                onSuccess: () => {
+                    setCurrentEventId(""); // Reset selection
+                    window.alert(`Event removed successfully.`);
+                },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                onError: (err: any) => {
+                    window.alert(`Failed to remove event: ${err?.message || "Unknown error"}`);
+                }
+            });
+        }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleResultChange = (fight: any, field: string, value: string | number) => {
         setResults(prev => {
             const current = Object.keys(prev).includes(fight.id) ? prev[fight.id] : {
@@ -84,7 +103,69 @@ export function AdminResults() {
 
     if (isLoading) return <EventSkeleton />;
     if (error) return <div className="text-red-500">Failed to load events.</div>;
-    if (!events || events.length === 0) return <div>No events found.</div>;
+
+    // Header logic abstracted here to be visible even if no events
+    const renderHeader = () => (
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 gap-4">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Fight Results</h1>
+                <p className="text-zinc-400">Manage official outcomes for {currentEvent?.name || "events"}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                {currentEvent && (
+                    <Button
+                        variant={hideCompleted ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setHideCompleted(!hideCompleted)}
+                        className="gap-2"
+                    >
+                        {hideCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {hideCompleted ? "Show All" : "Hide Completed"}
+                    </Button>
+                )}
+
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => fetchEventMutation.mutate(undefined, {
+                        onSuccess: () => window.alert("Upcoming event fetched successfully!"),
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        onError: (err: any) => window.alert(`Failed to fetch event: ${err?.message || "Check the console."}`)
+                    })}
+                    disabled={fetchEventMutation.isPending}
+                    className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                    {fetchEventMutation.isPending ? "Fetching..." : "Fetch Upcoming Event"}
+                </Button>
+
+                {currentEvent && (
+                    <>
+                        <div className="h-6 w-px bg-zinc-800 mx-1 hidden sm:block" />
+                        <EventSelector currentEvent={currentEvent} onEventChange={setCurrentEventId} />
+                        <Button
+                            variant="destructive"
+                            size="icon"
+                            onClick={handleRemoveEvent}
+                            disabled={removeEventMutation.isPending}
+                            className="w-9 h-9 shrink-0"
+                            title="Remove Event"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+
+    if (!events || events.length === 0) return (
+        <div className="space-y-8 pb-20 w-full max-w-4xl mx-auto">
+            {renderHeader()}
+            <div className="text-zinc-400 text-center py-12 bg-zinc-900/20 rounded-xl border border-zinc-800/50">
+                No events found. Click "Fetch Upcoming Event" to populate the database.
+            </div>
+        </div>
+    );
     if (!currentEvent) return <div>Select an event to manage results.</div>;
 
     // Sorting Logic: Main Event -> Co-Main -> Main Card -> Prelims
@@ -105,6 +186,7 @@ export function AdminResults() {
     const mainCardFights = sortedFights.filter(f => f.isMainCard);
     const prelimFights = sortedFights.filter(f => !f.isMainCard);
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const renderFightCard = (fight: any) => {
         // Init state from existing fight data if not in local state
         const currentResult = results[fight.id] || {
@@ -230,25 +312,7 @@ export function AdminResults() {
 
     return (
         <div className="space-y-8 pb-20 w-full max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Fight Results</h1>
-                    <p className="text-zinc-400">Manage official outcomes for {currentEvent.name}</p>
-                </div>
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <Button
-                        variant={hideCompleted ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setHideCompleted(!hideCompleted)}
-                        className="gap-2"
-                    >
-                        {hideCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        {hideCompleted ? "Show All" : "Hide Completed"}
-                    </Button>
-                    <div className="h-6 w-px bg-zinc-800 mx-1" />
-                    <EventSelector currentEvent={currentEvent} onEventChange={setCurrentEventId} />
-                </div>
-            </div>
+            {renderHeader()}
 
             {mainCardFights.length > 0 && (
                 <div className="space-y-4">

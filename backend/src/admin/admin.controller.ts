@@ -1,25 +1,50 @@
 import { Controller, Post, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
-
-// Ideally restrict to Admin Users only. 
-// For MVP, anyone with valid token might be allowed OR we check role in DB.
-// Let's stick to SupabaseGuard for now (Authenticated). 
-// Real app would need @Roles('ADMIN') guard.
+import { LiveScraperService } from '../jobs/live-scraper.service';
 
 @Controller('admin')
 export class AdminController {
-    constructor(private readonly adminService: AdminService) { }
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly liveScraperService: LiveScraperService,
+  ) {}
 
-    @Post('results')
-    @UseGuards(SupabaseGuard)
-    setResult(@Body() body: { fightId: string; result: any }) {
-        return this.adminService.setFightResult(body.fightId, body.result);
-    }
+  @Post('results')
+  setResult(
+    @Body()
+    body: {
+      fightId: string;
+      result: {
+        winnerId: string;
+        method: string;
+        round?: number;
+        time?: string;
+      };
+    },
+  ) {
+    return this.adminService.setFightResult(body.fightId, body.result);
+  }
 
-    @Post('leagues/:id/archive')
-    @UseGuards(SupabaseGuard)
-    archiveLeague(@Param('id') id: string) {
-        return this.adminService.archiveLeague(id);
-    }
+  @Post('leagues/:id/archive')
+  @UseGuards(SupabaseGuard)
+  archiveLeague(@Param('id') id: string) {
+    return this.adminService.archiveLeague(id);
+  }
+
+  /** Manually triggers the live scraper cron logic immediately. */
+  @Post('trigger-live-scraper')
+  triggerLiveScraper() {
+    return this.liveScraperService.handleLiveEvents();
+  }
+
+  /**
+   * Debug endpoint: returns a JSON report showing what the UFC page
+   * currently exposes vs what is stored in the DB — without touching anything.
+   * Usage: POST /admin/scrape-debug/ufc-fight-night-february-28-2026
+   */
+  @Post('scrape-debug/:eventSlug')
+  scrapeDebug(@Param('eventSlug') eventSlug: string) {
+    return this.liveScraperService.debugScrape(eventSlug);
+  }
 }

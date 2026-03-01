@@ -7,6 +7,6 @@ import { BetsModule } from '../bets/bets.module';
 @Module({
   imports: [PrismaModule, BetsModule],
   controllers: [LeaguesController],
-  providers: [LeaguesService]
+  providers: [LeaguesService],
 })
-export class LeaguesModule { }
+export class LeaguesModule {}
