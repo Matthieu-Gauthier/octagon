@@ -177,7 +177,13 @@ export function LeagueDashboard() {
     // const { data: myBets } = useMyBets(leagueId || ""); // Removed redundant hook
     const { mutate: placeBet } = usePlaceBet();
     const { mutate: removeBet } = useRemoveBet();
-    const { data: leagueStandings } = useLeagueStandings(leagueId || "");
+    // Default to live/upcoming event if available
+    const [eventIdx, setEventIdx] = useState(-1);
+
+    const { data: leagueStandings } = useLeagueStandings(
+        leagueId || "",
+        events && eventIdx !== -1 ? events[Math.max(0, Math.min(eventIdx, events.length - 1))]?.id : undefined,
+    );
 
     // Realtime updates
     useGameRealtime(leagueId);
@@ -187,8 +193,6 @@ export function LeagueDashboard() {
     const currentUserId = user?.id || "me";
     const myBets = allBets?.filter(b => b.userId === currentUserId || b.userId === "me"); // "me" for mock compat
 
-    // Default to live/upcoming event if available
-    const [eventIdx, setEventIdx] = useState(-1);
 
     useEffect(() => {
         if (events && events.length > 0 && eventIdx === -1) {

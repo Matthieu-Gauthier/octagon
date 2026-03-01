@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Request,
+  Query,
 } from '@nestjs/common';
 import { LeaguesService } from './leagues.service';
 import { Prisma } from '@prisma/client';
@@ -19,7 +20,7 @@ export class LeaguesController {
   constructor(
     private readonly leaguesService: LeaguesService,
     private readonly betsService: BetsService,
-  ) {}
+  ) { }
 
   @Post()
   @UseGuards(SupabaseGuard)
@@ -79,8 +80,11 @@ export class LeaguesController {
 
   @Get(':id/standings')
   @UseGuards(SupabaseGuard)
-  getStandings(@Param('id') id: string) {
-    return this.leaguesService.getStandings(id);
+  getStandings(
+    @Param('id') id: string,
+    @Query('eventId') eventId?: string,
+  ) {
+    return this.leaguesService.getStandings(id, eventId);
   }
 
   @Get(':id/bets')

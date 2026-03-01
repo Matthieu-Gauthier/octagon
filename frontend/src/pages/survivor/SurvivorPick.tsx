@@ -29,7 +29,7 @@ export function SurvivorPick() {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setSelections(initialSelections);
         }
-    }, [event, eventId, getPicksForEvent]);
+    }, [event, eventId]);
 
     if (isLoading) {
         return (

@@ -66,13 +66,15 @@ export function useJoinLeague() {
     });
 }
 
-export function useLeagueStandings(id: string) {
+export function useLeagueStandings(id: string, eventId?: string) {
     const isConnected = useRealtimeStore(s => s.isConnected);
     return useQuery({
-        queryKey: ["leagues", id, "standings"],
+        queryKey: ["leagues", id, "standings", eventId],
         queryFn: async () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const { data } = await api.get<any[]>(`/leagues/${id}/standings`);
+            const { data } = await api.get<any[]>(`/leagues/${id}/standings`, {
+                params: eventId ? { eventId } : undefined,
+            });
             return data;
         },
         enabled: !!id,

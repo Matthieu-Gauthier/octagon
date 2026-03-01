@@ -89,6 +89,7 @@ model Fighter {
   takedownAvg Float?
   imagePath String?  // Local asset path
   hometown  String?  // scraped from bio section for flag mapping
+  recentForm Json?   // Array of { result: 'W'|'L'|'D'|'NC', method: string }
   
   fightsA   Fight[]  @relation("FighterA")
   fightsB   Fight[]  @relation("FighterB")

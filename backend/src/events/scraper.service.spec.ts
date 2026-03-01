@@ -106,5 +106,48 @@ describe('ScraperService', () => {
       const result = await service.scrapeNextEvent();
       expect(result).toBeNull();
     });
+
+    it('T005: should parse recent form correctly', async () => {
+      // Mock fetchHtml to return a static HTML representing a fighter with a recent win and a loss
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(`
+        <html><body>
+          <h1 class="hero-profile__name">Jon Jones</h1>
+          <p class="hero-profile__division-body">27-1-0, 1 NC (W-L-D)</p>
+          <div class="athlete-record">
+            <div class="c-card-event--athlete-results">
+              <div class="c-card-event--athlete-results__image c-card-event--athlete-results__red-image">
+                <a href="/athlete/jon-jones"></a>
+                <div class="c-card-event--athlete-results__plaque win"></div>
+              </div>
+              <div class="c-card-event--athlete-results__result">
+                 <div class="c-card-event--athlete-results__result-label">Method</div>
+                 <div class="c-card-event--athlete-results__result-text">KO/TKO</div>
+              </div>
+            </div>
+            <div class="c-card-event--athlete-results">
+              <div class="c-card-event--athlete-results__image c-card-event--athlete-results__red-image">
+                <a href="/athlete/jon-jones"></a>
+              </div>
+              <div class="c-card-event--athlete-results__image c-card-event--athlete-results__blue-image win">
+                <a href="/athlete/dominick-reyes"></a>
+                <div class="c-card-event--athlete-results__plaque win"></div>
+              </div>
+              <div class="c-card-event--athlete-results__result">
+                 <div class="c-card-event--athlete-results__result-label">Method</div>
+                 <div class="c-card-event--athlete-results__result-text">Decision</div>
+              </div>
+            </div>
+          </div>
+        </body></html>
+      `);
+
+      const fighter = await (service as any).scrapeFighter('jon-jones');
+      expect(fighter.recentForm).toBeDefined();
+      expect(fighter.recentForm.length).toBe(2);
+      expect(fighter.recentForm[0].result).toBe('W');
+      expect(fighter.recentForm[0].method).toBe('KO/TKO');
+      expect(fighter.recentForm[1].result).toBe('L'); // No win banner for Jon Jones
+      expect(fighter.recentForm[1].method).toBe('Decision');
+    });
   });
 });

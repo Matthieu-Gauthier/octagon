@@ -26,6 +26,10 @@ export interface Fighter {
     sigStrikesLandedPerMin?: number;
     takedownAvg?: number;
     imagePath?: string;
+    recentForm?: {
+        result: 'W' | 'L' | 'D' | 'NC';
+        method: string;
+    }[];
 }
 
 export interface Fight {

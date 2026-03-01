@@ -4,11 +4,11 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Prisma, Bet, Fight } from '@prisma/client';
+import { Prisma, Bet, Fight, Event } from '@prisma/client';
 
 @Injectable()
 export class LeaguesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(
     data: Prisma.LeagueUncheckedCreateInput & { adminEmail?: string },
@@ -126,12 +126,10 @@ export class LeaguesService {
     }
   }
 
-  async getStandings(leagueId: string) {
+  async getStandings(leagueId: string, eventId?: string) {
     const league = await this.prisma.league.findUnique({
       where: { id: leagueId },
       include: {
-        // scoringSettings is JSON, so we just access it. No explicit include needed if it's a field, but check Prisma behavior.
-        // Wait, JSON fields are included by default.
         members: {
           include: {
             user: true,
@@ -139,7 +137,11 @@ export class LeaguesService {
         },
         bets: {
           include: {
-            fight: true,
+            fight: {
+              include: {
+                event: true,
+              },
+            },
           },
         },
       },
@@ -147,15 +149,40 @@ export class LeaguesService {
 
     if (!league) throw new NotFoundException('League not found');
 
+    // Use the provided eventId if given, otherwise auto-detect (LIVE first, then latest by date)
+    let currentEventId: string | null = eventId ?? null;
+
+    if (!currentEventId) {
+      const eventMap = new Map<string, { id: string; status: string; date: Date }>();
+      for (const bet of league.bets) {
+        const event = bet.fight.event;
+        if (!eventMap.has(event.id)) {
+          eventMap.set(event.id, { id: event.id, status: event.status, date: new Date(event.date) });
+        }
+      }
+
+      if (eventMap.size > 0) {
+        const events = Array.from(eventMap.values());
+        const liveEvent = events.find((e) => e.status === 'LIVE');
+        if (liveEvent) {
+          currentEventId = liveEvent.id;
+        } else {
+          events.sort((a, b) => b.date.getTime() - a.date.getTime());
+          currentEventId = events[0].id;
+        }
+      }
+    }
+
     const defaultSettings = { winner: 10, method: 5, round: 5, decision: 0 };
     const settings = {
       ...defaultSettings,
       ...((league.scoringSettings as object) || {}),
     };
 
-    // Group bets by user
-    const betsByUser = new Map<string, (Bet & { fight: Fight })[]>();
+    // Group bets by user, restricted to the current event only
+    const betsByUser = new Map<string, (Bet & { fight: Fight & { event: Event } })[]>();
     league.bets.forEach((bet) => {
+      if (currentEventId && bet.fight.eventId !== currentEventId) return;
       if (!betsByUser.has(bet.userId)) betsByUser.set(bet.userId, []);
       betsByUser.get(bet.userId)!.push(bet);
     });

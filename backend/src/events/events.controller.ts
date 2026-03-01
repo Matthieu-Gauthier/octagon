@@ -8,11 +8,15 @@ import {
   Request,
 } from '@nestjs/common';
 import { EventsService } from './events.service';
+import { LiveScraperService } from '../jobs/live-scraper.service';
 import { SupabaseGuard } from '../auth/supabase.guard';
 
 @Controller('events')
 export class EventsController {
-  constructor(private readonly eventsService: EventsService) {}
+  constructor(
+    private readonly eventsService: EventsService,
+    private readonly liveScraperService: LiveScraperService,
+  ) { }
 
   @Get()
   @UseGuards(SupabaseGuard)
@@ -27,13 +31,19 @@ export class EventsController {
   }
 
   @Post('admin/fetch')
-  @UseGuards(SupabaseGuard) // Todo: Wrap in specific AdminGuard later (T022)
+  @UseGuards(SupabaseGuard)
   fetchNextEvent() {
     return this.eventsService.fetchNextEvent();
   }
 
+  @Post('admin/:id/rescrape')
+  @UseGuards(SupabaseGuard)
+  rescrapeEvent(@Param('id') id: string) {
+    return this.liveScraperService.rescrapeEvent(id);
+  }
+
   @Delete('admin/:id')
-  @UseGuards(SupabaseGuard) // Todo: Wrap in specific AdminGuard later
+  @UseGuards(SupabaseGuard)
   removeEvent(@Param('id') id: string) {
     return this.eventsService.removeEvent(id);
   }

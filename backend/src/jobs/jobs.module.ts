@@ -5,5 +5,6 @@ import { LiveScraperService } from './live-scraper.service';
 @Module({
   imports: [PrismaModule],
   providers: [LiveScraperService],
+  exports: [LiveScraperService],
 })
-export class JobsModule {}
+export class JobsModule { }

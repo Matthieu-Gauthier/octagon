@@ -17,7 +17,40 @@ const METHODS: { value: Method; short: string; icon: string; label: string }[] =
 
 const FALLBACK_IMAGE = "/fighter-silhouette.png";
 
-const fight = {
+export type LastFight = {
+    result: "W" | "L" | "D" | "NC";
+    method?: string;
+    round?: number;
+};
+
+type FighterData = {
+    id: string;
+    name: string;
+    record: string;
+    imageUrl: string;
+    lastFights?: LastFight[];
+    winsByKo?: number;
+    winsByDec?: number;
+    winsBySub?: number;
+    height?: string;
+    weight?: string;
+    reach?: string;
+    stance?: string;
+    recentForm?: {
+        result: "W" | "L" | "D" | "NC";
+        method?: string;
+    }[];
+};
+
+type FightData = {
+    id: string;
+    division: string;
+    rounds: number;
+    fighterA: FighterData;
+    fighterB: FighterData;
+};
+
+const fight: FightData = {
     id: "f1",
     division: "Middleweight",
     rounds: 5,
@@ -26,16 +59,30 @@ const fight = {
         name: "Sean Strickland",
         record: "28-5-0",
         imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/STRICKLAND_SEAN_L_06-01.png?itok=S_BauaBm",
+        winsByKo: 11,
+        winsBySub: 4,
+        winsByDec: 13,
+        height: "6'1\"",
+        weight: "185 lbs",
+        reach: "76\"",
+        stance: "Orthodox",
     },
     fighterB: {
         id: "fb",
         name: "Anthony Hernandez",
         record: "12-2-0",
         imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2025-01/5/HERNANDEZ_ANTHONY_L_10-19.png?itok=6ys_gZcX",
+        winsByKo: 2,
+        winsBySub: 8,
+        winsByDec: 2,
+        height: "6'0\"",
+        weight: "185 lbs",
+        reach: "75\"",
+        stance: "Orthodox",
     },
 };
 
-const fightNoImages = {
+const fightNoImages: FightData = {
     id: "f2",
     division: "Lightweight",
     rounds: 3,
@@ -53,6 +100,270 @@ const fightNoImages = {
     },
 };
 
+const fightFullForm: FightData = {
+    id: "f3",
+    division: "Welterweight",
+    rounds: 5,
+    fighterA: {
+        id: "fa3",
+        name: "Leon Edwards",
+        record: "22-3-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-07/EDWARDS_LEON_L.png",
+        winsByKo: 7,
+        winsBySub: 3,
+        winsByDec: 12,
+        height: "6'2\"",
+        weight: "170 lbs",
+        reach: "74\"",
+        stance: "Southpaw",
+        lastFights: [
+            { result: "W", method: "DEC", round: 5 },
+            { result: "W", method: "KO", round: 3 },
+            { result: "NC", method: "EYE", round: 2 },
+        ]
+    },
+    fighterB: {
+        id: "fb3",
+        name: "Belal Muhammad",
+        record: "24-3-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2021-07/MUHAMMAD_BELAL_L.png",
+        winsByKo: 5,
+        winsBySub: 1,
+        winsByDec: 18,
+        height: "5'11\"",
+        weight: "170 lbs",
+        reach: "72\"",
+        stance: "Orthodox",
+        lastFights: [
+            { result: "W", method: "DEC", round: 5 },
+            { result: "W", method: "SUB", round: 2 },
+            { result: "W", method: "DEC", round: 3 },
+        ]
+    }
+};
+
+const fightMixedForm: FightData = {
+    id: "f4",
+    division: "Featherweight",
+    rounds: 3,
+    fighterA: {
+        id: "fa4",
+        name: "Alexander Volkanovski",
+        record: "26-4-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-02/VOLKANOVSKI_ALEXANDER_L_02-17.png?itok=9l5d-cIq",
+        winsByKo: 13,
+        winsBySub: 3,
+        winsByDec: 10,
+        height: "5'6\"",
+        weight: "145 lbs",
+        reach: "71\"",
+        stance: "Orthodox",
+        lastFights: [
+            { result: "L", method: "KO", round: 2 },
+            { result: "L", method: "KO", round: 1 },
+            { result: "W", method: "KO", round: 3 },
+        ]
+    },
+    fighterB: {
+        id: "fb4",
+        name: "Ilia Topuria",
+        record: "15-0-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-02/TOPURIA_ILIA_L_02-17.png?itok=8E2TzUe1",
+        winsByKo: 6,
+        winsBySub: 8,
+        winsByDec: 1,
+        height: "5'7\"",
+        weight: "145 lbs",
+        reach: "69\"",
+        stance: "Orthodox",
+        lastFights: [
+            { result: "W", method: "KO", round: 2 },
+            { result: "W", method: "DEC" },
+            { result: "W" },
+        ]
+    }
+};
+
+const fightMinimalForm: FightData = {
+    id: "f5",
+    division: "Bantamweight",
+    rounds: 3,
+    fighterA: {
+        id: "fa5",
+        name: "Sean O'Malley",
+        record: "18-2-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-03/OMALLEY_SEAN_L_03-09.png?itok=t7P5k-yT",
+        lastFights: [
+            { result: "L" },
+            { result: "W" },
+            { result: "W" },
+        ]
+    },
+    fighterB: {
+        id: "fb2",
+        name: "Merab Dvalishvili",
+        record: "18-4-0",
+        imageUrl: "https://ufc.com/images/styles/athlete_bio_full_body/s3/2024-09/DVALISHVILI_MERAB_L_09-14.png?itok=yE3_7r7-",
+        winsByKo: 2,
+        winsBySub: 1,
+        winsByDec: 15,
+        height: "5'6\"",
+        weight: "135 lbs",
+        reach: "68\"",
+        stance: "Orthodox",
+        lastFights: [
+            { result: "W" },
+            { result: "W" },
+            { result: "W" },
+        ]
+    }
+};
+
+// ============================================================================
+// Combined Stats & Wins Breakdown Widget (both fighters side-by-side)
+// ============================================================================
+type CombinedStatsProps = {
+    fighterA: FighterData;
+    fighterB: FighterData;
+    winner?: string | null;
+};
+function ShowcaseRecentFormWidget({ fighterA, fighterB, winner }: CombinedStatsProps) {
+    if (!fighterA.recentForm && !fighterB.recentForm && !fighterA.lastFights && !fighterB.lastFights) return null;
+
+    const renderLastFightNode = (lf: LastFight, fighterId: string, i: number, isMainDirLeft: boolean) => {
+        const outSelected = winner && winner !== fighterId;
+
+        const isMostRecent = isMainDirLeft ? i === 2 : i === 0;
+        const isOldest = isMainDirLeft ? i === 0 : i === 2;
+
+        const sizeClass = isMostRecent ? "w-[22px] h-[22px] text-[7px]" : isOldest ? "w-[16px] h-[16px] text-[5px] opacity-50" : "w-[18px] h-[18px] text-[6px] opacity-80";
+
+        let shortMethod: string = lf.result;
+        if (lf.result === 'NC') shortMethod = 'NC';
+        else if (lf.result === 'D') shortMethod = 'D';
+        else if (lf.method) {
+            const m = lf.method.toUpperCase();
+            if (m.includes("DEC") || m.includes("DÉC")) shortMethod = "DEC";
+            else if (m.includes("SUB") || m.includes("SOUMISSION")) shortMethod = "SUB";
+            else if (m.includes("KO") || m.includes("TKO") || m.includes("STOPPAGE")) shortMethod = "KO";
+            else shortMethod = m.replace("/TKO", "");
+        }
+
+        return (
+            <div title={`${lf.result} via ${lf.method || 'Unknown'}`} className={cn(
+                "flex items-center justify-center rounded-full font-black uppercase tracking-tighter shadow-md shrink-0 border transition-all",
+                sizeClass,
+                outSelected ? "bg-zinc-900 border-zinc-800 text-zinc-600" :
+                    lf.result === "W" ? "bg-green-500/90 hover:bg-green-400 text-green-950 border-green-400/50 shadow-green-900/20" :
+                        lf.result === "L" ? "bg-red-500/90 hover:bg-red-400 text-red-950 border-red-400/50 shadow-red-900/20" :
+                            "bg-zinc-600/90 hover:bg-zinc-500 text-zinc-950 border-zinc-500/50 shadow-black/20"
+            )}>
+                {shortMethod}
+            </div>
+        );
+    };
+
+    return (
+        <div className="flex flex-col items-center gap-0.5 w-full mt-1">
+            <div className="flex items-center gap-0 w-full justify-center">
+                {/* Left — Fighter A -> Left to Right -> Oldest to Most Recent -> reverse array */}
+                <div className="flex items-center justify-end w-[70px] gap-0 shrink-0">
+                    {((fighterA.recentForm && fighterA.recentForm.length > 0 ? fighterA.recentForm : fighterA.lastFights) || []).slice().reverse().map((lf, i, arr) => (
+                        <div key={i} className="flex items-center pointer-events-auto">
+                            {renderLastFightNode(lf as LastFight, fighterA.id, i, true)}
+                            {i < arr.length - 1 && <ChevronRight className={cn("w-2.5 h-2.5 -mx-0.5 z-10", winner === fighterB.id ? "text-zinc-800" : "text-zinc-600")} />}
+                        </div>
+                    ))}
+                </div>
+                {/* Space Center */}
+                <div className="w-[40px] shrink-0" />
+                {/* Right — Fighter B -> Right to Left -> Most Recent on Left, Oldest on Right -> normal array */}
+                <div className="flex items-center justify-start w-[70px] gap-0 shrink-0">
+                    {((fighterB.recentForm && fighterB.recentForm.length > 0 ? fighterB.recentForm : fighterB.lastFights) || []).map((lf, i) => (
+                        <div key={i} className="flex items-center pointer-events-auto">
+                            {i > 0 && <ChevronLeft className={cn("w-2.5 h-2.5 -mx-0.5 z-10", winner === fighterA.id ? "text-zinc-800" : "text-zinc-600")} />}
+                            {renderLastFightNode(lf as LastFight, fighterB.id, i, false)}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ShowcaseCombinedStats({ fighterA, fighterB, winner }: CombinedStatsProps) {
+    const totalA = (fighterA.winsByKo ?? 0) + (fighterA.winsByDec ?? 0) + (fighterA.winsBySub ?? 0);
+    const totalB = (fighterB.winsByKo ?? 0) + (fighterB.winsByDec ?? 0) + (fighterB.winsBySub ?? 0);
+
+    const pct = (n: number, total: number) => total > 0 ? Math.round((n / total) * 100) : 0;
+
+    const winRows = (totalA === 0 && totalB === 0) ? [] : [
+        { label: 'KO/TKO', a: fighterA.winsByKo ?? 0, b: fighterB.winsByKo ?? 0, pA: pct(fighterA.winsByKo ?? 0, totalA), pB: pct(fighterB.winsByKo ?? 0, totalB) },
+        { label: 'DEC', a: fighterA.winsByDec ?? 0, b: fighterB.winsByDec ?? 0, pA: pct(fighterA.winsByDec ?? 0, totalA), pB: pct(fighterB.winsByDec ?? 0, totalB) },
+        { label: 'SUB', a: fighterA.winsBySub ?? 0, b: fighterB.winsBySub ?? 0, pA: pct(fighterA.winsBySub ?? 0, totalA), pB: pct(fighterB.winsBySub ?? 0, totalB) },
+    ];
+
+    const formatStat = (val?: string | null) => {
+        if (!val) return '--';
+        return val.replace(/\.00$/, '');
+    };
+
+    const statRows = [
+        { label: 'HEIGHT', a: formatStat(fighterA.height), b: formatStat(fighterB.height) },
+        { label: 'WEIGHT', a: formatStat(fighterA.weight), b: formatStat(fighterB.weight) },
+        { label: 'REACH', a: formatStat(fighterA.reach), b: formatStat(fighterB.reach) },
+    ];
+
+    return (
+        <div className="flex flex-col items-center gap-1 w-[160px] pb-8 pt-4">
+
+            {/* WINS BY METHOD */}
+            {winRows.length > 0 && (
+                <div className="flex flex-col items-center gap-0.5 w-full mt-2">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">
+                        Wins by Method
+                    </span>
+                    {winRows.map(({ label, a, b, pA, pB }) => (
+                        <div key={label} className="flex items-center gap-0 w-full">
+                            <div className="flex items-center justify-end gap-1 w-[64px] shrink-0">
+                                <span className={cn("text-[8px]", winner === fighterB.id ? "text-zinc-600" : "text-zinc-500")}>({pA}%)</span>
+                                <span className={cn("text-[10px] font-bold font-mono", winner === fighterB.id ? "text-zinc-600" : "text-white/80")}>{a}</span>
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400 w-[50px] shrink-0 text-center">
+                                {label}
+                            </span>
+                            <div className="flex items-center gap-1 w-[64px] shrink-0">
+                                <span className={cn("text-[10px] font-bold font-mono", winner === fighterA.id ? "text-zinc-600" : "text-white/80")}>{b}</span>
+                                <span className={cn("text-[8px]", winner === fighterA.id ? "text-zinc-600" : "text-zinc-500")}>({pB}%)</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* PHYSICAL STATS */}
+            <div className="flex flex-col items-center gap-0.5 opacity-90 w-full mt-2">
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5 mt-1">
+                    Physical Stats
+                </span>
+                {statRows.map(({ label, a, b }) => (
+                    <div key={label} className="flex items-center gap-0 w-full">
+                        <div className="flex items-center justify-end w-[64px] shrink-0">
+                            <span className={cn("text-[9px] font-bold font-mono w-full text-right truncate", winner === fighterB.id ? "text-zinc-600" : "text-zinc-300")}>{a}</span>
+                        </div>
+                        <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500 w-[50px] shrink-0 text-center">
+                            {label}
+                        </span>
+                        <div className="flex items-center justify-start w-[64px] shrink-0">
+                            <span className={cn("text-[9px] font-bold font-mono w-full text-left truncate", winner === fighterA.id ? "text-zinc-600" : "text-zinc-300")}>{b}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // ============================================================================
 // CARD COMPONENT (shared across all variants)
 // ============================================================================
@@ -60,7 +371,7 @@ interface ShowcaseCardProps {
     height?: string;
     eventType?: "main" | "comain" | "standard";
     selectionVariant: SelectionVariant;
-    customFight?: typeof fight;
+    customFight?: FightData;
 }
 
 function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionVariant, customFight }: ShowcaseCardProps) {
@@ -151,14 +462,22 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
 
             {/* Fighters Area */}
             <div className={cn("grid grid-cols-2 relative transition-all", height)}>
+                {/* Central Info Column */}
+                <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center justify-start pt-8 w-[180px]">
+                    <ShowcaseCombinedStats fighterA={f.fighterA} fighterB={f.fighterB} winner={winner} />
+                </div>
+
+                {/* Central Bottom Info Column */}
+                <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none flex flex-col items-center">
+                    <ShowcaseRecentFormWidget fighterA={f.fighterA} fighterB={f.fighterB} winner={winner} />
+                </div>
+
                 {/* Fighter A */}
                 <div
                     onClick={(e) => handleFighterClick(f.fighterA.id, e)}
                     className={cn(
                         "relative group cursor-pointer overflow-hidden transition-all duration-500",
-                        winner === f.fighterA.id ? "bg-red-900/20" : "hover:bg-zinc-900/10",
-                        winner === f.fighterB.id && "grayscale opacity-50",
-                        !winner && "grayscale"
+                        winner === f.fighterA.id ? "bg-red-900/20" : "hover:bg-zinc-900/10"
                     )}
                 >
                     <div className="absolute inset-0 bg-gradient-to-tr from-red-600/10 to-transparent opacity-30" />
@@ -167,7 +486,8 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
                         className={cn(
                             "absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-700 ease-out origin-bottom object-contain pointer-events-none",
                             imgHeight,
-                            winner === f.fighterA.id ? "scale-105 drop-shadow-[0_0_25px_rgba(220,38,38,0.4)]" : "scale-100 group-hover:scale-105"
+                            winner === f.fighterA.id ? "scale-105 drop-shadow-[0_0_25px_rgba(220,38,38,0.4)]" : "scale-100 group-hover:scale-105",
+                            winner === f.fighterB.id && "grayscale opacity-50"
                         )}
                     />
                     <div className="absolute bottom-0 left-0 w-full p-4 pb-4 transition-all flex flex-col justify-end h-full pointer-events-none">
@@ -175,10 +495,10 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
                             {winner === f.fighterA.id && (
                                 <Badge className="bg-red-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-red-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
                             )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
+                            <h3 className={cn("text-2xl sm:text-3xl font-black italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto transition-colors", winner !== f.fighterA.id ? "text-zinc-300" : "text-white")}>
                                 {f.fighterA.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
                             </h3>
-                            <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{f.fighterA.record}</p>
+                            <p className={cn("text-sm font-bold mt-1 font-mono tracking-wider transition-colors", winner !== f.fighterA.id ? "text-zinc-500" : "text-red-500")}>{f.fighterA.record}</p>
                             {winner === f.fighterA.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     <Check className="w-2.5 h-2.5 text-red-400" />
@@ -204,9 +524,7 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
                     onClick={(e) => handleFighterClick(f.fighterB.id, e)}
                     className={cn(
                         "relative group cursor-pointer overflow-hidden transition-all duration-500",
-                        winner === f.fighterB.id ? "bg-blue-900/20" : "hover:bg-zinc-900/10",
-                        winner === f.fighterA.id && "grayscale opacity-50",
-                        !winner && "grayscale"
+                        winner === f.fighterB.id ? "bg-blue-900/20" : "hover:bg-zinc-900/10"
                     )}
                 >
                     <div className="absolute inset-0 bg-gradient-to-tl from-blue-600/10 to-transparent opacity-30" />
@@ -215,7 +533,8 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
                         className={cn(
                             "absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-700 ease-out origin-bottom object-contain pointer-events-none",
                             imgHeight,
-                            winner === f.fighterB.id ? "scale-105 drop-shadow-[0_0_25px_rgba(37,99,235,0.4)]" : "scale-100 group-hover:scale-105"
+                            winner === f.fighterB.id ? "scale-105 drop-shadow-[0_0_25px_rgba(37,99,235,0.4)]" : "scale-100 group-hover:scale-105",
+                            winner === f.fighterA.id && "grayscale opacity-50"
                         )}
                     />
                     <div className="absolute bottom-0 right-0 w-full p-4 pb-4 text-right bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent flex flex-col justify-end h-full pointer-events-none">
@@ -223,10 +542,10 @@ function ShowcaseCard({ height = "h-[400px]", eventType = "standard", selectionV
                             {winner === f.fighterB.id && (
                                 <Badge className="bg-blue-600 text-white border-0 text-[8px] mb-1 shadow-lg shadow-blue-900/50 animate-in zoom-in px-1.5 py-0 tracking-wider font-bold">PICK</Badge>
                             )}
-                            <h3 className="text-2xl sm:text-3xl font-black text-white italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto">
+                            <h3 className={cn("text-2xl sm:text-3xl font-black italic uppercase leading-[0.85] drop-shadow-2xl break-words hyphens-auto transition-colors", winner !== f.fighterB.id ? "text-zinc-300" : "text-white")}>
                                 {f.fighterB.name.split(" ").map((n, i) => <span key={i} className="block">{n}</span>)}
                             </h3>
-                            <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{f.fighterB.record}</p>
+                            <p className={cn("text-sm font-bold mt-1 font-mono tracking-wider transition-colors", winner !== f.fighterB.id ? "text-zinc-500" : "text-blue-500")}>{f.fighterB.record}</p>
                             {winner === f.fighterB.id && isComplete && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     <Check className="w-2.5 h-2.5 text-blue-400" />
@@ -557,7 +876,55 @@ export function FightCardShowcase() {
                 </section>
             </div>
 
-            {/* ── SECTION 3: MY PICKS SUMMARY VARIANTS ── */}
+            {/* ── SECTION 3: RECENT FORM EXAMPLES ── */}
+            <div className="space-y-12">
+                <div className="flex items-center justify-center pt-8">
+                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                    <span className="px-4 text-zinc-500 font-mono text-xs uppercase tracking-widest whitespace-nowrap">Fighters Recent Form</span>
+                    <div className="h-px bg-zinc-800 w-full max-w-xs" />
+                </div>
+
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded">Full</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Full Information Form</h3>
+                            <p className="text-xs text-zinc-500">Shows Win/Loss/NC along with Method and Round when available.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
+                        <ShowcaseCard height="h-[400px]" eventType="main" selectionVariant="bottom-drawer" customFight={fightFullForm} />
+                    </div>
+                </section>
+
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-purple-600 text-white text-xs font-bold px-2.5 py-1 rounded">Mixed</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Mixed Information Form</h3>
+                            <p className="text-xs text-zinc-500">Some items have method/round, some just method, some just W/L.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
+                        <ShowcaseCard height="h-[400px]" eventType="comain" selectionVariant="bottom-drawer" customFight={fightMixedForm} />
+                    </div>
+                </section>
+
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <span className="bg-zinc-600 text-white text-xs font-bold px-2.5 py-1 rounded">Min</span>
+                        <div>
+                            <h3 className="text-lg font-bold">Minimal Information Form</h3>
+                            <p className="text-xs text-zinc-500">Only showing Win or Loss.</p>
+                        </div>
+                    </div>
+                    <div className="border border-dashed border-zinc-700 rounded-2xl p-6 bg-zinc-950/50">
+                        <ShowcaseCard height="h-[400px]" eventType="standard" selectionVariant="bottom-drawer" customFight={fightMinimalForm} />
+                    </div>
+                </section>
+            </div>
+
+            {/* ── SECTION 4: MY PICKS SUMMARY VARIANTS ── */}
             <div className="space-y-12">
                 <div className="flex items-center justify-center pt-8">
                     <div className="h-px bg-zinc-800 w-full max-w-xs" />

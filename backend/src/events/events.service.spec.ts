@@ -42,7 +42,7 @@ describe('EventsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return scheduled and live events, or finished events with user bets', async () => {
+    it('should return all events', async () => {
       const userId = 'user-123';
       const mockEvents = [{ id: 'event-1', status: 'SCHEDULED' }];
       (prisma.event.findMany as jest.Mock).mockResolvedValue(mockEvents);
@@ -51,15 +51,6 @@ describe('EventsService', () => {
 
       expect(result).toEqual(mockEvents);
       expect(prisma.event.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [
-            { status: { in: ['SCHEDULED', 'LIVE'] } },
-            {
-              status: 'FINISHED',
-              fights: { some: { bets: { some: { userId } } } },
-            },
-          ],
-        },
         include: expect.any(Object),
         orderBy: { date: 'asc' },
       });

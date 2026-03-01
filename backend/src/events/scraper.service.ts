@@ -21,6 +21,10 @@ export interface ScrapedFighter {
   takedownAvg: number | null;
   imagePath: string | null;
   hometown?: string;
+  recentForm?: {
+    result: 'W' | 'L' | 'D' | 'NC';
+    method: string;
+  }[];
 }
 
 export interface ScrapedFight {
@@ -153,9 +157,9 @@ export class ScraperService {
         isMainCard: boolean;
         isPrelim: boolean;
       }[] = [
-        { selector: '#main-card', isMainCard: true, isPrelim: false },
-        { selector: '#prelims-card', isMainCard: false, isPrelim: true },
-      ];
+          { selector: '#main-card', isMainCard: true, isPrelim: false },
+          { selector: '#prelims-card', isMainCard: false, isPrelim: true },
+        ];
 
       let globalIndex = 0; // tracks overall fight order for isMainEvent / isCoMainEvent
 
@@ -174,14 +178,34 @@ export class ScraperService {
             .trim();
           if (weightClass.toLowerCase().includes('early prelim')) continue;
 
+          // Try to get slugs from <a href> links (scheduled/upcoming fights)
           const fighterLinks = $f.find('.c-listing-fight__corner-name a');
-          if (fighterLinks.length < 2) continue;
 
-          const fA = $ev(fighterLinks[0]);
-          const fB = $ev(fighterLinks[1]);
+          // Fall back to plain-text corner names for finished fights
+          // (UFC removes <a> tags once a fight is completed)
+          const cornerNameEls = $f.find('.c-listing-fight__corner-name');
 
-          const fASlug = fA.attr('href')?.split('/').pop() || '';
-          const fBSlug = fB.attr('href')?.split('/').pop() || '';
+          let fASlug =
+            $ev(fighterLinks[0]).attr('href')?.split('/').pop() || '';
+          let fBSlug =
+            $ev(fighterLinks[1]).attr('href')?.split('/').pop() || '';
+
+          if (!fASlug && cornerNameEls.length >= 1) {
+            fASlug = $ev(cornerNameEls[0])
+              .text()
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, '-');
+          }
+          if (!fBSlug && cornerNameEls.length >= 2) {
+            fBSlug = $ev(cornerNameEls[1])
+              .text()
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, '-');
+          }
+
+          if (!fASlug || !fBSlug) continue;
 
           if (fASlug && !fightersMap.has(fASlug)) {
             fightersMap.set(fASlug, await this.scrapeFighter(fASlug));
@@ -250,6 +274,9 @@ export class ScraperService {
       $('h1.hero-profile__name').text().trim() ||
       $('h1.c-hero__headline').text().trim() ||
       slug.replace(/-/g, ' ');
+
+    const canonicalUrl = $('link[rel="canonical"]').attr('href');
+    const canonicalSlug = canonicalUrl ? canonicalUrl.split('/').pop() : null;
 
     // Record — new: p.hero-profile__division-body / fallback: .c-hero__headline-number
     // Format: "28-1-0 (W-L-D)" or "28-6-0, 1 NC"
@@ -359,6 +386,83 @@ export class ScraperService {
       $('.hero-profile__image img').attr('src') ||
       null;
 
+    // Recent Form (Last 3 Fights)
+    const recentForm: { result: 'W' | 'L' | 'D' | 'NC'; method: string }[] = [];
+    $('.athlete-record .c-card-event--athlete-results').each((i, el) => {
+      if (i >= 3) return false; // Only get last 3 fights
+
+      const $fight = $(el);
+      let method = 'Unknown';
+
+      // Get the method string from the results block
+      $fight.find('.c-card-event--athlete-results__result').each((_, resEl) => {
+        const labelText = $(resEl)
+          .find('.c-card-event--athlete-results__result-label')
+          .text()
+          .trim()
+          .toLowerCase();
+        if (labelText?.toLowerCase()?.includes('method')) {
+          method =
+            $(resEl)
+              .find('.c-card-event--athlete-results__result-text')
+              .text()
+              .trim() || 'Unknown';
+        }
+      });
+
+      // Check result based on Win banner logic
+      const $winBanner = $fight.find(
+        '.c-card-event--athlete-results__plaque.win',
+      );
+
+      let result: 'W' | 'L' | 'D' | 'NC' = 'NC';
+
+      if ($winBanner.length > 0) {
+        // Find if the current athlete has the win banner
+        let isWinner = false;
+        let isParticipant = false;
+
+        $fight
+          .find('.c-card-event--athlete-results__image')
+          .each((_, imgEl) => {
+            const href = $(imgEl).find('a').attr('href') || '';
+            const altText = $(imgEl).find('img').attr('alt') || '';
+
+            const isMatch =
+              href.includes(slug) ||
+              (canonicalSlug && href.includes(canonicalSlug)) ||
+              (altText && name && altText.toLowerCase() === name.toLowerCase());
+
+            if (isMatch) {
+              isParticipant = true;
+              if (
+                $(imgEl).hasClass('win') ||
+                $(imgEl).find('.c-card-event--athlete-results__plaque.win')
+                  .length > 0
+              ) {
+                isWinner = true;
+              }
+            }
+          });
+
+        if (isParticipant) {
+          result = isWinner ? 'W' : 'L';
+        }
+      } else {
+        // No win banner for anyone. Could be Draw or NC. Check method string.
+        if (
+          method.toLowerCase().includes('draw') ||
+          method.toLowerCase().includes('égalité')
+        ) {
+          result = 'D';
+        } else {
+          result = 'NC';
+        }
+      }
+      recentForm.push({ result, method });
+    });
+    this.logger.log(recentForm);
+
     this.logger.log(
       `Scraped fighter ${name}: ${wins}-${losses}-${draws}${noContests ? `, ${noContests} NC` : ''}`,
     );
@@ -381,6 +485,7 @@ export class ScraperService {
       takedownAvg,
       imagePath: imageSrc ?? '',
       hometown: hometown || undefined,
+      recentForm,
     };
   }
 
