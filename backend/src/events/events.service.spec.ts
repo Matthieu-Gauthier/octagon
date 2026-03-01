@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventsService } from './events.service';
 import { ScraperService } from './scraper.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UfcstatsEnrichmentService } from './ufcstats-enrichment.service';
 
 describe('EventsService', () => {
   let service: EventsService;
@@ -27,6 +28,12 @@ describe('EventsService', () => {
               findUnique: jest.fn(),
               delete: jest.fn(),
             },
+          },
+        },
+        {
+          provide: UfcstatsEnrichmentService,
+          useValue: {
+            enrichEvent: jest.fn().mockResolvedValue({}),
           },
         },
       ],

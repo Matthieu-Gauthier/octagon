@@ -8,7 +8,7 @@ import { Prisma, Bet, Fight, Event } from '@prisma/client';
 
 @Injectable()
 export class LeaguesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(
     data: Prisma.LeagueUncheckedCreateInput & { adminEmail?: string },
@@ -153,11 +153,18 @@ export class LeaguesService {
     let currentEventId: string | null = eventId ?? null;
 
     if (!currentEventId) {
-      const eventMap = new Map<string, { id: string; status: string; date: Date }>();
+      const eventMap = new Map<
+        string,
+        { id: string; status: string; date: Date }
+      >();
       for (const bet of league.bets) {
         const event = bet.fight.event;
         if (!eventMap.has(event.id)) {
-          eventMap.set(event.id, { id: event.id, status: event.status, date: new Date(event.date) });
+          eventMap.set(event.id, {
+            id: event.id,
+            status: event.status,
+            date: new Date(event.date),
+          });
         }
       }
 
@@ -180,7 +187,10 @@ export class LeaguesService {
     };
 
     // Group bets by user, restricted to the current event only
-    const betsByUser = new Map<string, (Bet & { fight: Fight & { event: Event } })[]>();
+    const betsByUser = new Map<
+      string,
+      (Bet & { fight: Fight & { event: Event } })[]
+    >();
     league.bets.forEach((bet) => {
       if (currentEventId && bet.fight.eventId !== currentEventId) return;
       if (!betsByUser.has(bet.userId)) betsByUser.set(bet.userId, []);

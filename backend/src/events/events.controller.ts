@@ -16,7 +16,7 @@ export class EventsController {
   constructor(
     private readonly eventsService: EventsService,
     private readonly liveScraperService: LiveScraperService,
-  ) { }
+  ) {}
 
   @Get()
   @UseGuards(SupabaseGuard)

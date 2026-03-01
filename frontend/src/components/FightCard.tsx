@@ -12,6 +12,17 @@ import { getFlagForHometown } from "@/lib/flags";
 // ============================================================================
 type Method = 'KO/TKO' | 'SUBMISSION' | 'DECISION';
 
+export interface ResultBreakdown {
+    userPick: { winnerId: string; winnerName: string; method?: string; round?: number };
+    result: { winnerId: string; winnerName: string; method?: string; round?: number };
+    scoring: {
+        winnerCorrect: boolean;
+        methodCorrect: boolean;
+        roundCorrect: boolean;
+        points: number;
+    };
+}
+
 const METHODS: { value: Method; short: string; icon: string; label: string }[] = [
     { value: "KO/TKO", short: "KO", icon: "💥", label: "KO / TKO" },
     { value: "SUBMISSION", short: "SUB", icon: "🔒", label: "Submission" },
@@ -161,6 +172,52 @@ function CombinedStats({ fighterA, fighterB, winner }: CombinedStatsProps) {
     );
 }
 
+// ============================================================================
+// RESULT CENTER (Shown when fight is FINISHED)
+// ============================================================================
+
+function ResultCenter({ resultBreakdown }: { resultBreakdown: ResultBreakdown }) {
+    const { userPick, result, scoring } = resultBreakdown;
+
+    const formatMethod = (method?: string, round?: number) => {
+        if (!method) return "No Pick";
+        if (method === "DECISION" || method === "DEC") return "DEC";
+        return `${method}${round ? ` R${round}` : ''}`;
+    };
+
+    const pickText = userPick.winnerId
+        ? `${userPick.winnerName.split(' ').pop()} (${formatMethod(userPick.method, userPick.round)})`
+        : "No Pick";
+
+    const resultText = `${result.winnerName.split(' ').pop()} (${formatMethod(result.method, result.round)})`;
+
+    return (
+        <div className="flex flex-col items-center justify-center w-[180px] py-4">
+            <div className="flex flex-col items-center">
+                <span className={cn(
+                    "text-4xl font-black drop-shadow-lg",
+                    scoring.points > 0 ? "text-yellow-500" : "text-zinc-700"
+                )}>
+                    +{scoring.points}
+                </span>
+            </div>
+
+            <div className="flex flex-col gap-1 w-full mt-2">
+                <div className="flex flex-col items-center justify-center text-center bg-zinc-900/80 p-2.5 rounded-t-xl border border-zinc-800 border-b-0 backdrop-blur-sm">
+                    <span className="text-zinc-500 font-bold uppercase tracking-widest text-[8px] mb-1">Your Pick</span>
+                    <span className={cn("font-black text-[11px] leading-tight", scoring.winnerCorrect ? "text-blue-400" : (userPick.winnerId ? "text-red-400 line-through opacity-80" : "text-zinc-600"))}>
+                        {pickText}
+                    </span>
+                </div>
+                <div className="flex flex-col items-center justify-center text-center bg-emerald-950/30 p-2.5 rounded-b-xl border border-emerald-900/50 backdrop-blur-sm">
+                    <span className="text-emerald-500/70 font-bold uppercase tracking-widest text-[8px] mb-1">Actual Result</span>
+                    <span className="text-emerald-400 font-black text-[11px] leading-tight">{resultText}</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export interface FightCardPick {
     winnerId: string;
     method?: Method;
@@ -177,7 +234,7 @@ export interface ResultBreakdown {
     result: {
         winnerId: string;
         winnerName: string;
-        method: string;
+        method?: string;
         round?: number;
     };
     scoring: {
@@ -207,7 +264,7 @@ interface VegasFightCardProps {
 // ============================================================================
 // Main Component (Refactored to match ShowcaseCard)
 // ============================================================================
-export function VegasFightCard({ fight, mode = "full", value = null, onPickChange, locked = false, lockAt }: VegasFightCardProps) {
+export function VegasFightCard({ fight, mode = "full", value = null, onPickChange, locked = false, lockAt, resultBreakdown }: VegasFightCardProps) {
     const [winner, setWinner] = useState<string | null>(value?.winnerId ?? null);
     const [method, setMethod] = useState<Method | null>((value?.method as Method) ?? null);
     const [round, setRound] = useState<number | null>(value?.round ?? null);
@@ -433,13 +490,19 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
             <div className={cn("grid grid-cols-2 relative transition-all", heightClass)}>
                 {/* Central Info Column */}
                 <div className="absolute inset-y-0 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center justify-center py-8 w-[180px]">
-                    <CombinedStats fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
+                    {resultBreakdown ? (
+                        <ResultCenter resultBreakdown={resultBreakdown} />
+                    ) : (
+                        <CombinedStats fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
+                    )}
                 </div>
 
                 {/* Central Bottom Info Column */}
-                <div className="absolute inset-x-0 bottom-1 z-20 pointer-events-none flex flex-col items-center">
-                    <RecentFormWidget fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
-                </div>
+                {!resultBreakdown && (
+                    <div className="absolute inset-x-0 bottom-1 z-20 pointer-events-none flex flex-col items-center">
+                        <RecentFormWidget fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
+                    </div>
+                )}
 
                 {/* Flags Near Top Corners */}
                 {getFlagForHometown(fight.fighterA.hometown) && (
@@ -480,7 +543,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                                 ))}
                             </h3>
                             <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.wins}-{fight.fighterA.losses}-{fight.fighterA.noContests}</p>
-                            {winner === fight.fighterA.id && isComplete && (
+                            {winner === fight.fighterA.id && isComplete && !resultBreakdown && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     {isLocked ? <Lock className="w-2.5 h-2.5 text-red-400" /> : <Check className="w-2.5 h-2.5 text-red-400" />}
                                     <span className="text-[9px] font-black text-red-200 uppercase tracking-wide">{getShortSummary()}</span>
@@ -518,7 +581,7 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                                 ))}
                             </h3>
                             <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.wins}-{fight.fighterB.losses}-{fight.fighterB.noContests}</p>
-                            {winner === fight.fighterB.id && isComplete && (
+                            {winner === fight.fighterB.id && isComplete && !resultBreakdown && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
                                     {isLocked ? <Lock className="w-2.5 h-2.5 text-blue-400" /> : <Check className="w-2.5 h-2.5 text-blue-400" />}
                                     <span className="text-[9px] font-black text-blue-200 uppercase tracking-wide">{getShortSummary()}</span>

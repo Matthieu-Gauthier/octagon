@@ -157,9 +157,9 @@ export class ScraperService {
         isMainCard: boolean;
         isPrelim: boolean;
       }[] = [
-          { selector: '#main-card', isMainCard: true, isPrelim: false },
-          { selector: '#prelims-card', isMainCard: false, isPrelim: true },
-        ];
+        { selector: '#main-card', isMainCard: true, isPrelim: false },
+        { selector: '#prelims-card', isMainCard: false, isPrelim: true },
+      ];
 
       let globalIndex = 0; // tracks overall fight order for isMainEvent / isCoMainEvent
 
@@ -461,8 +461,6 @@ export class ScraperService {
       }
       recentForm.push({ result, method });
     });
-    this.logger.log(recentForm);
-
     this.logger.log(
       `Scraped fighter ${name}: ${wins}-${losses}-${draws}${noContests ? `, ${noContests} NC` : ''}`,
     );

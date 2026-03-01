@@ -8,7 +8,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly liveScraperService: LiveScraperService,
-  ) { }
+  ) {}
 
   @Post('results')
   setResult(

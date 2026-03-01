@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useLeague, useLeagueStandings } from "@/hooks/useLeagues";
 import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
-import { Fight, Bet, BetDTO, Event as ApiEvent } from "@/types/api";
+import { Fight, Bet, BetDTO, Event as ApiEvent, ScoringSettings } from "@/types/api";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,12 +26,63 @@ import { createPortal } from "react-dom";
 // Fight Card with league-scoped bets
 // ============================================================================
 
-function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, onRemoveBet }: { fight: Fight; leagueId: string; locked: boolean; lockAt?: string | null; myBets: Bet[]; onPlaceBet: (bet: BetDTO) => void; onRemoveBet: (betId: string) => void }) {
+function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, onRemoveBet, settings }: { fight: Fight; leagueId: string; locked: boolean; lockAt?: string | null; myBets: Bet[]; onPlaceBet: (bet: BetDTO) => void; onRemoveBet: (betId: string) => void; settings: ScoringSettings }) {
 
     const liveBet = myBets.find(b => b.fightId === fight.id);
     const bet = liveBet;
 
     const value = bet ? { winnerId: bet.winnerId, method: bet.method as FightCardPick["method"], round: bet.round } : null;
+
+    let resultBreakdown = undefined;
+    if (fight.status === 'FINISHED' && fight.winnerId) {
+        let points = 0;
+        let winnerCorrect = false;
+        let methodCorrect = false;
+        let roundCorrect = false;
+
+        const officialWinnerName = fight.winnerId === fight.fighterA.id ? fight.fighterA.name : fight.fighterB.name;
+        let pickWinnerName = "";
+
+        if (bet && bet.winnerId) {
+            pickWinnerName = bet.winnerId === fight.fighterA.id ? fight.fighterA.name : (bet.winnerId === fight.fighterB.id ? fight.fighterB.name : "Unknown");
+            winnerCorrect = bet.winnerId === fight.winnerId;
+            if (winnerCorrect) {
+                points += settings.winner;
+                methodCorrect = bet.method === fight.method;
+                if (methodCorrect) {
+                    points += settings.method;
+                    if (bet.method === 'DECISION' || bet.method === 'DRAW' || bet.method === 'NC') {
+                        points += settings.decision || 0;
+                        roundCorrect = true;
+                    } else if (bet.round === fight.round) {
+                        roundCorrect = true;
+                        points += settings.round;
+                    }
+                }
+            }
+        }
+
+        resultBreakdown = {
+            userPick: {
+                winnerId: bet?.winnerId || "",
+                winnerName: pickWinnerName,
+                method: bet?.method,
+                round: bet?.round,
+            },
+            result: {
+                winnerId: fight.winnerId,
+                winnerName: officialWinnerName,
+                method: fight.method,
+                round: fight.round,
+            },
+            scoring: {
+                winnerCorrect,
+                methodCorrect,
+                roundCorrect,
+                points
+            }
+        };
+    }
 
     return (
         <VegasFightCard
@@ -40,6 +91,7 @@ function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, 
             value={value}
             locked={locked}
             lockAt={lockAt}
+            resultBreakdown={resultBreakdown}
             onPickChange={locked ? undefined : (pick) => {
                 if (!pick) {
                     if (bet && bet.id) {
@@ -66,7 +118,7 @@ function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, 
 // ============================================================================
 // Event Hero Banner (Extracted for performance)
 // ============================================================================
-function EventHeroBanner({ events, safeEventIdx, setEventIdx, isFinished }: { events: ApiEvent[]; safeEventIdx: number; setEventIdx: (idx: number) => void; isFinished: boolean }) {
+function EventHeroBanner({ events, safeEventIdx, setEventIdx }: { events: ApiEvent[]; safeEventIdx: number; setEventIdx: (idx: number) => void; }) {
     const event = events[safeEventIdx];
 
     return (
@@ -116,10 +168,12 @@ function EventHeroBanner({ events, safeEventIdx, setEventIdx, isFinished }: { ev
                 <div
                     className="text-center flex flex-col items-center justify-center flex-1 h-full max-w-[60%] mt-auto"
                 >
-                    {isFinished ? (
-                        <Badge variant="outline" className="bg-zinc-800/80 text-zinc-400 border-zinc-700 backdrop-blur-md shadow-lg shadow-black/50 mb-2">COMPLETED</Badge>
+                    {event.status === "FINISHED" ? (
+                        <Badge variant="outline" className="bg-zinc-800/80 text-zinc-400 border-zinc-700 backdrop-blur-md shadow-lg shadow-black/50 mb-2">FINISHED</Badge>
+                    ) : event.status === "LIVE" ? (
+                        <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30 backdrop-blur-md shadow-lg shadow-black/50 mb-2">LIVE</Badge>
                     ) : (
-                        <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30 backdrop-blur-md shadow-lg shadow-black/50 mb-2">LIVE NOW</Badge>
+                        <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30 backdrop-blur-md shadow-lg shadow-black/50 mb-2">UPCOMING</Badge>
                     )}
 
                     <h2
@@ -369,7 +423,6 @@ export function LeagueDashboard() {
                 events={events}
                 safeEventIdx={safeEventIdx}
                 setEventIdx={setEventIdx}
-                isFinished={isFinished}
             />
 
 
@@ -583,8 +636,8 @@ export function LeagueDashboard() {
                                         });
                                     };
 
-                                    const mainCardFights = completedFights.filter((_, i) => completedFights.length < 6 ? i >= 0 : i >= completedFights.length - 5);
-                                    const prelimsFights = completedFights.filter((_, i) => completedFights.length < 6 ? false : i < completedFights.length - 5);
+                                    const mainCardFights = completedFights.filter(f => f.isMainCard);
+                                    const prelimsFights = completedFights.filter(f => !f.isMainCard);
 
                                     return (
                                         <>
@@ -679,6 +732,7 @@ export function LeagueDashboard() {
                             myBets={myBets || []}
                             onPlaceBet={placeBet}
                             onRemoveBet={removeBet}
+                            settings={settings as ScoringSettings}
                         />
                     ))}
                 </TabsContent>
@@ -695,6 +749,7 @@ export function LeagueDashboard() {
                                 myBets={myBets || []}
                                 onPlaceBet={placeBet}
                                 onRemoveBet={removeBet}
+                                settings={settings as ScoringSettings}
                             />
                         ))}
                     </TabsContent>

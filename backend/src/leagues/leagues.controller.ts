@@ -20,7 +20,7 @@ export class LeaguesController {
   constructor(
     private readonly leaguesService: LeaguesService,
     private readonly betsService: BetsService,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(SupabaseGuard)
@@ -80,10 +80,7 @@ export class LeaguesController {
 
   @Get(':id/standings')
   @UseGuards(SupabaseGuard)
-  getStandings(
-    @Param('id') id: string,
-    @Query('eventId') eventId?: string,
-  ) {
+  getStandings(@Param('id') id: string, @Query('eventId') eventId?: string) {
     return this.leaguesService.getStandings(id, eventId);
   }
 
