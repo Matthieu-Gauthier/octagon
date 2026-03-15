@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -6,15 +7,18 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { LoginPage } from "@/pages/auth/LoginPage";
 import { RegisterPage } from "@/pages/auth/RegisterPage";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ProfileEditor } from "@/components/ProfileEditor";
+import { useMe } from "@/hooks/useUser";
 import { AdminLayout } from "@/layouts/AdminLayout";
 import { AdminDashboard } from "@/pages/admin/AdminDashboard";
 import { AdminResults } from "@/pages/admin/AdminResults";
 import { AdminEvents } from "@/pages/admin/AdminEvents";
 import { LeaguesHub } from "@/pages/leagues/LeaguesHub";
 import { CreateLeague } from "@/pages/leagues/CreateLeague";
-import { LeagueDashboard } from "@/pages/leagues/LeagueDashboard";
+import { LeagueView } from "@/pages/leagues/LeagueView";
 import { SurvivorPick } from "@/pages/survivor/SurvivorPick";
 import { FightCardShowcase } from "@/pages/FightCardShowcase";
+import { MobileApp } from "@/pages/mobile/MobileApp";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -24,7 +28,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { data: me } = useMe();
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <div className="min-h-screen bg-background text-foreground font-sans pb-20">
@@ -45,15 +51,14 @@ function AppContent() {
 
           <div className="flex items-center gap-4">
             {user ? (
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8">
+              <button onClick={() => setShowProfile(true)} className="rounded-full focus:outline-none">
+                <Avatar className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity">
                   <AvatarImage src={user.user_metadata.avatar_url} />
-                  <AvatarFallback>{user.email?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>
+                    {me?.username ? me.username.slice(0, 2).toUpperCase() : user.email?.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
-                <Button variant="ghost" size="sm" onClick={() => signOut()}>
-                  Logout
-                </Button>
-              </div>
+              </button>
             ) : (
               <Link to="/login">
                 <Button variant="default" size="sm">
@@ -65,6 +70,8 @@ function AppContent() {
         </div>
       </header>
 
+      {showProfile && <ProfileEditor onClose={() => setShowProfile(false)} />}
+
       {/* Main Content */}
       <main className="container py-6 md:py-10 mx-auto px-4 animate-in fade-in duration-500">
         <Routes>
@@ -75,7 +82,7 @@ function AppContent() {
             <Route path="/" element={<Navigate to="/leagues" replace />} />
             <Route path="/leagues" element={<ProtectedRoute><LeaguesHub /></ProtectedRoute>} />
             <Route path="/leagues/create" element={<ProtectedRoute><CreateLeague /></ProtectedRoute>} />
-            <Route path="/leagues/:leagueId" element={<ProtectedRoute><LeagueDashboard /></ProtectedRoute>} />
+            <Route path="/leagues/:leagueId" element={<ProtectedRoute><LeagueView /></ProtectedRoute>} />
             <Route path="/leagues/:leagueId/survivor/pick/:eventId" element={<ProtectedRoute><SurvivorPick /></ProtectedRoute>} />
             <Route path="/showcase" element={<FightCardShowcase />} />
           </Route>
@@ -96,7 +103,12 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppContent />
+        <Routes>
+          {/* Mobile experience — full-screen layout, no desktop header */}
+          <Route path="/mobile/:leagueId/*" element={<MobileApp />} />
+          {/* Desktop experience — existing layout */}
+          <Route path="/*" element={<AppContent />} />
+        </Routes>
         <Toaster position="top-center" richColors />
       </AuthProvider>
     </Router>

@@ -14,6 +14,7 @@ import { FightsModule } from './fights/fights.module';
 import { AdminModule } from './admin/admin.module';
 import { HealthController } from './health/health.controller';
 import { JobsModule } from './jobs/jobs.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { JobsModule } from './jobs/jobs.module';
     FightsModule,
     AdminModule,
     JobsModule,
+    UsersModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],

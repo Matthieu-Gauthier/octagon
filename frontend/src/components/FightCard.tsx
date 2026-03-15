@@ -1,11 +1,12 @@
-import { Fight, Fighter } from "@/types";
+import { Fight } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Check, ChevronLeft, RotateCcw, Flame, Shield, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { ChevronRight } from "lucide-react";
 import { FighterPortrait } from "./FighterPortrait";
 import { getFlagForHometown } from "@/lib/flags";
+import { FighterStatsCenterPanel, RecentFormRow } from "./FighterStats";
+import { MobileFightCard } from "./MobileFightCard";
 
 // ============================================================================
 // Types
@@ -29,154 +30,12 @@ const METHODS: { value: Method; short: string; icon: string; label: string }[] =
     { value: "DECISION", short: "DEC", icon: "📋", label: "Decision" },
 ];
 
-// ============================================================================
-// Combined Stats & Wins Breakdown Widget (both fighters side-by-side)
-// ============================================================================
-type CombinedStatsProps = {
-    fighterA: Fighter;
-    fighterB: Fighter;
-    winner?: string | null;
-};
-function RecentFormWidget({ fighterA, fighterB, winner }: CombinedStatsProps) {
-    if (!fighterA.recentForm && !fighterB.recentForm) return null;
-
-    const renderLastFightNode = (lf: { result: 'W' | 'L' | 'D' | 'NC'; method: string }, fighterId: string, i: number, isMainDirLeft: boolean) => {
-        const outSelected = winner && winner !== fighterId;
-
-        const isMostRecent = isMainDirLeft ? i === 2 : i === 0;
-        const isOldest = isMainDirLeft ? i === 0 : i === 2;
-
-        const sizeClass = isMostRecent ? "w-[22px] h-[22px] text-[7px]" : isOldest ? "w-[16px] h-[16px] text-[5px] opacity-50" : "w-[18px] h-[18px] text-[6px] opacity-80";
-
-        let shortMethod: string = lf.result;
-        if (lf.result === 'NC') shortMethod = 'NC';
-        else if (lf.result === 'D') shortMethod = 'D';
-        else if (lf.method) {
-            const m = lf.method.toUpperCase();
-            if (m.includes("DEC") || m.includes("DÉC")) shortMethod = "DEC";
-            else if (m.includes("SUB") || m.includes("SOUMISSION")) shortMethod = "SUB";
-            else if (m.includes("KO") || m.includes("TKO") || m.includes("STOPPAGE")) shortMethod = "KO";
-            else shortMethod = m.replace("/TKO", "");
-        }
-
-        return (
-            <div title={`${lf.result} via ${lf.method || 'Unknown'}`} className={cn(
-                "flex items-center justify-center rounded-full font-black uppercase tracking-tighter shadow-md shrink-0 border transition-all",
-                sizeClass,
-                outSelected ? "bg-zinc-900 border-zinc-800 text-zinc-600" :
-                    lf.result === "W" ? "bg-green-500/90 hover:bg-green-400 text-green-950 border-green-400/50 shadow-green-900/20" :
-                        lf.result === "L" ? "bg-red-500/90 hover:bg-red-400 text-red-950 border-red-400/50 shadow-red-900/20" :
-                            "bg-zinc-600/90 hover:bg-zinc-500 text-zinc-950 border-zinc-500/50 shadow-black/20"
-            )}>
-                {shortMethod}
-            </div>
-        );
-    };
-
-    return (
-        <div className="flex flex-col items-center gap-0.5 w-full mt-1">
-            <div className="flex items-center gap-0 w-full mb-1 justify-center">
-                {/* Left — Fighter A -> Left to Right -> Oldest to Most Recent -> reverse array */}
-                <div className="flex items-center justify-end w-[70px] gap-0 shrink-0">
-                    {fighterA.recentForm && [...fighterA.recentForm].slice(0, 3).reverse().map((lf, i, arr) => (
-                        <div key={i} className="flex items-center pointer-events-auto">
-                            {renderLastFightNode(lf, fighterA.id, i, true)}
-                            {i < arr.length - 1 && <ChevronRight className={cn("w-2.5 h-2.5 -mx-0.5 z-10", winner === fighterB.id ? "text-zinc-800" : "text-zinc-600")} />}
-                        </div>
-                    ))}
-                </div>
-                {/* Space Center */}
-                <div className="w-[40px] shrink-0" />
-                {/* Right — Fighter B -> Right to Left -> Most Recent on Left, Oldest on Right -> normal array */}
-                <div className="flex items-center justify-start w-[70px] gap-0 shrink-0">
-                    {fighterB.recentForm && fighterB.recentForm.slice(0, 3).map((lf, i) => (
-                        <div key={i} className="flex items-center pointer-events-auto">
-                            {i > 0 && <ChevronLeft className={cn("w-2.5 h-2.5 -mx-0.5 z-10", winner === fighterA.id ? "text-zinc-800" : "text-zinc-600")} />}
-                            {renderLastFightNode(lf, fighterB.id, i, false)}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function CombinedStats({ fighterA, fighterB, winner }: CombinedStatsProps) {
-    const totalA = (fighterA.winsByKo ?? 0) + (fighterA.winsByDec ?? 0) + (fighterA.winsBySub ?? 0);
-    const totalB = (fighterB.winsByKo ?? 0) + (fighterB.winsByDec ?? 0) + (fighterB.winsBySub ?? 0);
-
-    const pct = (n: number, total: number) => total > 0 ? Math.round((n / total) * 100) : 0;
-
-    const winRows = (totalA === 0 && totalB === 0) ? [] : [
-        { label: 'KO/TKO', a: fighterA.winsByKo ?? 0, b: fighterB.winsByKo ?? 0, pA: pct(fighterA.winsByKo ?? 0, totalA), pB: pct(fighterB.winsByKo ?? 0, totalB) },
-        { label: 'DEC', a: fighterA.winsByDec ?? 0, b: fighterB.winsByDec ?? 0, pA: pct(fighterA.winsByDec ?? 0, totalA), pB: pct(fighterB.winsByDec ?? 0, totalB) },
-        { label: 'SUB', a: fighterA.winsBySub ?? 0, b: fighterB.winsBySub ?? 0, pA: pct(fighterA.winsBySub ?? 0, totalA), pB: pct(fighterB.winsBySub ?? 0, totalB) },
-    ];
-
-    const formatStat = (val?: string | null) => {
-        if (!val) return '--';
-        return val.replace(/\.00$/, '');
-    };
-
-    const statRows = [
-        { label: 'HEIGHT', a: formatStat(fighterA.height), b: formatStat(fighterB.height) },
-        { label: 'WEIGHT', a: formatStat(fighterA.weight), b: formatStat(fighterB.weight) },
-        { label: 'REACH', a: formatStat(fighterA.reach), b: formatStat(fighterB.reach) },
-    ];
-
-    return (
-        <div className="flex flex-col items-center w-full">
-
-            {winRows.length > 0 && (
-                <div className="flex flex-col items-center gap-0.5 w-full mt-2">
-                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5">
-                        Wins by Method
-                    </span>
-                    {winRows.map(({ label, a, b, pA, pB }) => (
-                        <div key={label} className="flex items-center gap-0 w-full">
-                            <div className="flex items-center justify-end gap-1 w-[64px] shrink-0">
-                                <span className={cn("text-[8px]", winner === fighterB.id ? "text-zinc-600" : "text-zinc-500")}>({pA}%)</span>
-                                <span className={cn("text-[10px] font-bold font-mono", winner === fighterB.id ? "text-zinc-600" : "text-white/80")}>{a}</span>
-                            </div>
-                            <span className="text-[9px] font-black uppercase tracking-wider text-zinc-400 w-[50px] shrink-0 text-center">
-                                {label}
-                            </span>
-                            <div className="flex items-center gap-1 w-[64px] shrink-0">
-                                <span className={cn("text-[10px] font-bold font-mono", winner === fighterA.id ? "text-zinc-600" : "text-white/80")}>{b}</span>
-                                <span className={cn("text-[8px]", winner === fighterA.id ? "text-zinc-600" : "text-zinc-500")}>({pB}%)</span>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <div className="flex flex-col items-center gap-0.5 opacity-90 w-full mt-2">
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-0.5 mt-1">
-                    Physical Stats
-                </span>
-                {statRows.map(({ label, a, b }) => (
-                    <div key={label} className="flex items-center gap-0 w-full">
-                        <div className="flex items-center justify-end w-[64px] shrink-0">
-                            <span className={cn("text-[9px] font-bold font-mono w-full text-right truncate", winner === fighterB.id ? "text-zinc-600" : "text-zinc-300")}>{a}</span>
-                        </div>
-                        <span className="text-[8px] font-black uppercase tracking-wider text-zinc-500 w-[50px] shrink-0 text-center">
-                            {label}
-                        </span>
-                        <div className="flex items-center justify-start w-[64px] shrink-0">
-                            <span className={cn("text-[9px] font-bold font-mono w-full text-left truncate", winner === fighterA.id ? "text-zinc-600" : "text-zinc-300")}>{b}</span>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-}
 
 // ============================================================================
 // RESULT CENTER (Shown when fight is FINISHED)
 // ============================================================================
 
-function ResultCenter({ resultBreakdown }: { resultBreakdown: ResultBreakdown }) {
+export function ResultCenter({ resultBreakdown }: { resultBreakdown: ResultBreakdown }) {
     const { userPick, result, scoring } = resultBreakdown;
 
     const formatMethod = (method?: string, round?: number) => {
@@ -493,14 +352,14 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                     {resultBreakdown ? (
                         <ResultCenter resultBreakdown={resultBreakdown} />
                     ) : (
-                        <CombinedStats fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
+                        <FighterStatsCenterPanel fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
                     )}
                 </div>
 
                 {/* Central Bottom Info Column */}
                 {!resultBreakdown && (
                     <div className="absolute inset-x-0 bottom-1 z-20 pointer-events-none flex flex-col items-center">
-                        <RecentFormWidget fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
+                        <RecentFormRow fighterA={fight.fighterA} fighterB={fight.fighterB} winner={winner} />
                     </div>
                 )}
 
@@ -652,5 +511,28 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 </div>
             )}
         </div>
+    );
+}
+
+// ============================================================================
+// Responsive wrapper — MobileFightCard on small screens, VegasFightCard on md+
+// ============================================================================
+export function ResponsiveFightCard(props: VegasFightCardProps) {
+    return (
+        <>
+            <div className="md:hidden">
+                <MobileFightCard
+                    fight={props.fight}
+                    mode={props.mode}
+                    value={props.value}
+                    onPickChange={props.onPickChange}
+                    locked={props.locked}
+                    lockAt={props.lockAt}
+                />
+            </div>
+            <div className="hidden md:block">
+                <VegasFightCard {...props} />
+            </div>
+        </>
     );
 }

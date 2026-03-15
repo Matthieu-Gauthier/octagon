@@ -232,7 +232,7 @@ export class LeaguesService {
             if (isDecisionPerfect) {
               points +=
                 settings.decision !== undefined ? settings.decision : 10;
-            } else if (bet.round && fight.round && bet.round === fight.round) {
+            } else if (methodCorrect && bet.round && fight.round && bet.round === fight.round) {
               points += settings.round || 5;
               roundCorrect = true;
             }

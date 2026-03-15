@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEvent } from "@/hooks/useEvents";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { VegasFightCard } from "@/components/FightCard";
+import { ResponsiveFightCard } from "@/components/FightCard";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 
@@ -77,7 +77,7 @@ export function SurvivorPick() {
 
             <div className="grid gap-4">
                 {(event.fights || []).map((fight) => (
-                    <VegasFightCard
+                    <ResponsiveFightCard
                         key={fight.id}
                         fight={fight}
                         mode="winner"

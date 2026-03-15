@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { useLeague, useLeagueStandings } from "@/hooks/useLeagues";
 import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
 import { Fight, Bet, BetDTO, Event as ApiEvent, ScoringSettings } from "@/types/api";
+import { calcFightPoints, DEFAULT_SCORING } from "@/hooks/useLeagueData";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +11,7 @@ import { ArrowLeft, Copy, Trophy, ChevronRight, ChevronLeft, MapPin, Target, Che
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { VegasFightCard, FightCardPick } from "@/components/FightCard";
+import { ResponsiveFightCard, FightCardPick } from "@/components/FightCard";
 import { useEvents } from "@/hooks/useEvents";
 import { useBets, usePlaceBet, useRemoveBet } from "@/hooks/useBets";
 import { useAuth } from "@/context/AuthContext";
@@ -35,57 +36,21 @@ function LeagueFightCard({ fight, leagueId, locked, lockAt, myBets, onPlaceBet, 
 
     let resultBreakdown = undefined;
     if (fight.status === 'FINISHED' && fight.winnerId) {
-        let points = 0;
-        let winnerCorrect = false;
-        let methodCorrect = false;
-        let roundCorrect = false;
-
+        const { points, winnerCorrect, methodCorrect, roundCorrect } = calcFightPoints(fight, bet, settings);
         const officialWinnerName = fight.winnerId === fight.fighterA.id ? fight.fighterA.name : fight.fighterB.name;
-        let pickWinnerName = "";
-
-        if (bet && bet.winnerId) {
-            pickWinnerName = bet.winnerId === fight.fighterA.id ? fight.fighterA.name : (bet.winnerId === fight.fighterB.id ? fight.fighterB.name : "Unknown");
-            winnerCorrect = bet.winnerId === fight.winnerId;
-            if (winnerCorrect) {
-                points += settings.winner;
-                methodCorrect = bet.method === fight.method;
-                if (methodCorrect) {
-                    points += settings.method;
-                    if (bet.method === 'DECISION' || bet.method === 'DRAW' || bet.method === 'NC') {
-                        points += settings.decision || 0;
-                        roundCorrect = true;
-                    } else if (bet.round === fight.round) {
-                        roundCorrect = true;
-                        points += settings.round;
-                    }
-                }
-            }
-        }
+        const pickWinnerName = bet?.winnerId
+            ? (bet.winnerId === fight.fighterA.id ? fight.fighterA.name : bet.winnerId === fight.fighterB.id ? fight.fighterB.name : "Unknown")
+            : "";
 
         resultBreakdown = {
-            userPick: {
-                winnerId: bet?.winnerId || "",
-                winnerName: pickWinnerName,
-                method: bet?.method,
-                round: bet?.round,
-            },
-            result: {
-                winnerId: fight.winnerId,
-                winnerName: officialWinnerName,
-                method: fight.method,
-                round: fight.round,
-            },
-            scoring: {
-                winnerCorrect,
-                methodCorrect,
-                roundCorrect,
-                points
-            }
+            userPick:  { winnerId: bet?.winnerId || "", winnerName: pickWinnerName, method: bet?.method, round: bet?.round },
+            result:    { winnerId: fight.winnerId, winnerName: officialWinnerName, method: fight.method, round: fight.round },
+            scoring:   { winnerCorrect, methodCorrect, roundCorrect, points },
         };
     }
 
     return (
-        <VegasFightCard
+        <ResponsiveFightCard
             fight={fight}
             mode="full"
             value={value}
@@ -309,35 +274,24 @@ export function LeagueDashboard() {
         toast.success("Invite code copied!");
     };
 
-    const defaultSettings = { winner: 10, method: 5, round: 5, decision: 0 };
-    const settings = { ...defaultSettings, ...(league.scoringSettings as object || {}) };
+    const settings = { ...DEFAULT_SCORING, ...(league.scoringSettings as object || {}) };
 
-    // Calculate perfect picks for everyone first to allow sorting
+    const finishedFights = (event?.fights || []).filter(f => f.status === "FINISHED" && f.winnerId);
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const enrichedStandings = [...(leagueStandings || [])].map((s: any) => {
-        let perfect = 0;
+    const sortedStandings = [...(leagueStandings || [])].map((s: any) => {
         const userBets = allBets?.filter(b => b.leagueId === league.id && b.userId === s.userId) || [];
-        const finishedFights = (event?.fights || []).filter(f => f.status === "FINISHED" && f.winnerId);
-
-        finishedFights.forEach(fight => {
+        const perfect = finishedFights.reduce((acc, fight) => {
             const bet = userBets.find(b => b.fightId === fight.id);
-            if (bet && fight.winnerId && bet.winnerId === fight.winnerId && bet.method === fight.method) {
-                if (bet.method === "DECISION" || bet.method === "DRAW") {
-                    perfect++;
-                } else if (bet.round === fight.round) {
-                    perfect++;
-                }
-            }
-        });
-
+            const { winnerCorrect, methodCorrect, roundCorrect } = calcFightPoints(fight, bet, settings);
+            const isDecision = bet?.method === "DECISION" || bet?.method === "DRAW";
+            return (winnerCorrect && methodCorrect && (isDecision || roundCorrect)) ? acc + 1 : acc;
+        }, 0);
         return { ...s, perfect };
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sortedStandings = [...enrichedStandings].sort((a: any, b: any) => {
-        if (b.points !== a.points) return b.points - a.points; // 1. Points
-        if (b.perfect !== a.perfect) return b.perfect - a.perfect; // 2. Perfect Picks
-        return b.correct - a.correct; // 3. Correct Picks
+    }).sort((a: any, b: any) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.perfect !== a.perfect) return b.perfect - a.perfect;
+        return b.correct - a.correct;
     });
 
     const displayStandings = [...sortedStandings];
@@ -372,22 +326,11 @@ export function LeagueDashboard() {
     // Per-section stats for "me"
     const computeSectionStats = (fights: Fight[]) => {
         const myBetsList = allBets?.filter(b => b.leagueId === league.id && b.userId === currentUserId) || [];
-
-        let points = 0;
-        let correct = 0;
-        const finished = fights.filter(f => f.status === "FINISHED" && f.winnerId);
-        for (const fight of finished) {
+        let points = 0, correct = 0;
+        for (const fight of fights.filter(f => f.status === "FINISHED" && f.winnerId)) {
             const bet = myBetsList.find(b => b.fightId === fight.id);
-            if (!bet || !fight.winnerId) continue;
-            if (bet.winnerId === fight.winnerId) {
-                correct++;
-                points += settings.winner;
-                if (bet.method === fight.method) {
-                    points += settings.method;
-                    if (bet.method === "DECISION") points += settings.decision;
-                    else if (bet.round === fight.round) points += settings.round;
-                }
-            }
+            const { points: p, winnerCorrect } = calcFightPoints(fight, bet, settings);
+            if (winnerCorrect) { correct++; points += p; }
         }
         return { points, correct, total: fights.length };
     };
@@ -531,7 +474,7 @@ export function LeagueDashboard() {
                                                     totalPoints += settings.winner;
                                                     if (methodCorrect) {
                                                         totalPoints += settings.method;
-                                                        if (isDecisionPerfect) totalPoints += settings.decision;
+                                                        if (isDecisionPerfect) totalPoints += settings.decision ?? 0;
                                                         else if (roundCorrect) totalPoints += settings.round;
                                                     }
                                                 }
@@ -559,29 +502,12 @@ export function LeagueDashboard() {
                                             const bet = myBetsList.find(b => b.fightId === fight.id);
                                             const winnerName = fight.winnerId === fight.fighterA.id ? fight.fighterA.name : fight.fighterB.name;
 
-                                            let isPerfect = false;
-                                            let points = 0;
-                                            let winnerCorrect = false;
-                                            let methodCorrect = false;
+                                            const { points, winnerCorrect, methodCorrect, roundCorrect } = calcFightPoints(fight, bet, settings);
+                                            const isDecision = bet?.method === "DECISION" || bet?.method === "DRAW";
+                                            const isPerfect = winnerCorrect && methodCorrect && (isDecision || roundCorrect);
                                             let choiceText = "No Pick";
 
-                                            if (bet && fight.winnerId) {
-                                                winnerCorrect = bet.winnerId === fight.winnerId;
-                                                methodCorrect = winnerCorrect && bet.method === fight.method;
-                                                const roundCorrect = methodCorrect && bet.method !== "DECISION" && bet.method !== "DRAW" && bet.round === fight.round;
-                                                const isDecisionPerfect = methodCorrect && (bet.method === "DECISION" || bet.method === "DRAW");
-
-                                                isPerfect = isDecisionPerfect || roundCorrect;
-
-                                                if (winnerCorrect) {
-                                                    points += settings.winner;
-                                                    if (methodCorrect) {
-                                                        points += settings.method;
-                                                        if (isDecisionPerfect) points += settings.decision;
-                                                        else if (roundCorrect) points += settings.round;
-                                                    }
-                                                }
-
+                                            if (bet) {
                                                 const betFighterName = fight.fighterA.id === bet.winnerId ? fight.fighterA.name : fight.fighterB.name;
                                                 choiceText = `${betFighterName.split(" ").pop()}${bet.method ? ` (${bet.method === "DECISION" ? "DEC" : bet.method === "SUBMISSION" ? "SUB" : "KO"}${bet.round ? ` R${bet.round}` : ''})` : ''}`;
                                             }
