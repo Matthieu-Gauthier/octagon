@@ -209,8 +209,12 @@ export class LiveScraperService {
         $(`tr[data-link*="${fight.ufcstatsId}"]`).each((_i, row) => {
           const cells = $(row).find('td');
 
-          // Method: cell index 7
-          const rawMethod = cells.eq(7).text().trim();
+          // Method: cell index 7 — take only the first <p> to avoid
+          // concatenating the sub-method (e.g. "Punch") into the raw value
+          const methodCell = cells.eq(7);
+          const rawMethod = (
+            methodCell.find('p').first().text() || methodCell.text()
+          ).trim();
           if (rawMethod) {
             isFinished = true;
             newMethod = this.mapMethod(rawMethod);
