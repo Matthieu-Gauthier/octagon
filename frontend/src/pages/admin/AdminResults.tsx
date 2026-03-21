@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { EventSelector } from "@/components/EventSelector";
 import { useEvents, useFetchNextEvent, useRemoveEvent } from "@/hooks/useEvents";
 import { useUpdateFightResult } from "@/hooks/useAdminFights";

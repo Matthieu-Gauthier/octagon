@@ -1,8 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { MobileLayout } from '@/layouts/MobileLayout';
-import { MobilePicks } from './MobilePicks';
-import { MobileStandings } from './MobileStandings';
-import { MobileExplore } from './MobileExplore';
+import {MobilePicks} from "@/pages/mobile/MobilePicks.tsx";
+import {MobileStandings} from "@/pages/mobile/MobileStandings.tsx";
+import {MobileExplore} from "@/pages/mobile/MobileExplore.tsx";
 
 export function MobileApp() {
   return (

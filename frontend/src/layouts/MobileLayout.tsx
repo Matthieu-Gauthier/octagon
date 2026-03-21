@@ -5,9 +5,10 @@ import { Flame, Trophy, Compass, ChevronDown, ChevronLeft, Check } from 'lucide-
 import { cn } from '@/lib/utils';
 import { useEvents } from '@/hooks/useEvents';
 import { useAuth } from '@/context/AuthContext';
-import { useAtouts, ATOUT_DEFS, type AtoutType, type PlayedAtout } from '@/hooks/useAtouts';
+import { useAtouts, ATOUT_DEFS } from '@/hooks/useAtouts';
+import { AtoutPlayModal } from '@/components/AtoutPlayModal';
 import { useLeagueData } from '@/hooks/useLeagueData';
-import type { Fight, Event } from '@/types/api';
+import type { Event } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -123,245 +124,6 @@ function EventPickerSheet({
               </p>
             )}
           </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-/* ─── Atout Modal ─────────────────────────────────────────────────────────── */
-
-type ModalStep = 'choose_type' | 'choose_fight' | 'choose_target' | 'confirm';
-
-function AtoutModal({
-  open,
-  onClose,
-  fights,
-  standings,
-  currentUserId,
-  atoutsState,
-  onPlay,
-  currentUserName,
-}: {
-  open: boolean;
-  onClose: () => void;
-  fights: Fight[];
-  standings: { userId: string; username?: string }[];
-  currentUserId: string;
-  atoutsState: ReturnType<typeof useAtouts>;
-  onPlay: (a: Omit<PlayedAtout, 'id' | 'playedAt'>) => void;
-  currentUserName: string;
-}) {
-  const [step, setStep] = useState<ModalStep>('choose_type');
-  const [type, setType] = useState<AtoutType | null>(null);
-  const [fightId, setFightId] = useState<string | null>(null);
-  const [targetId, setTargetId] = useState<string | null>(null);
-  const [targetName, setTargetName] = useState<string>('');
-
-  const reset = () => {
-    setStep('choose_type');
-    setType(null);
-    setFightId(null);
-    setTargetId(null);
-    setTargetName('');
-  };
-
-  const handleClose = () => { reset(); onClose(); };
-
-  const handleSelectType = (t: AtoutType) => {
-    setType(t);
-    const def = ATOUT_DEFS.find(d => d.type === t)!;
-    if (!def.selfTarget) {
-      setStep('choose_target');
-    } else {
-      setStep('choose_fight');
-    }
-  };
-
-  const handleSelectTarget = (userId: string, name: string) => {
-    setTargetId(userId);
-    setTargetName(name);
-    setStep('choose_fight');
-  };
-
-  const handleSelectFight = (fight: Fight) => {
-    setFightId(fight.id);
-    setStep('confirm');
-  };
-
-  const handleConfirm = () => {
-    if (!type || !fightId) return;
-    onPlay({
-      type,
-      playedByUserId: currentUserId,
-      playedByName: currentUserName,
-      fightId,
-      targetUserId: targetId ?? undefined,
-      targetUserName: targetName || undefined,
-    });
-    handleClose();
-  };
-
-  const def = type ? ATOUT_DEFS.find(d => d.type === type) : null;
-  const selectedFight = fights.find(f => f.id === fightId);
-  const availableFights = fights.filter(f => f.isMainCard && f.status !== 'FINISHED');
-  const availableTargets = standings.filter(s => {
-    if (s.userId === currentUserId) return false;
-    if (atoutsState.isTargeted(s.userId)) return false;
-    return true;
-  });
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className={cn(
-          'fixed inset-0 bg-black/70 backdrop-blur-sm z-40 transition-opacity duration-300',
-          open ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        )}
-        onClick={handleClose}
-      />
-
-      {/* Bottom sheet */}
-      <div
-        className={cn(
-          'fixed inset-x-0 bottom-0 z-50 bg-zinc-950 border-t border-zinc-800/60 rounded-t-3xl transition-transform duration-300 ease-out',
-          open ? 'translate-y-0' : 'translate-y-full'
-        )}
-      >
-        {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 rounded-full bg-zinc-700" />
-        </div>
-
-        <div className="px-5 pb-10 min-h-[340px]">
-          {/* Step: choose type */}
-          {step === 'choose_type' && (
-            <>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-4 text-center">
-                Choose a power up
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {ATOUT_DEFS.map(d => (
-                  <button
-                    key={d.type}
-                    onClick={() => handleSelectType(d.type)}
-                    className={cn(
-                      'flex flex-col items-start gap-2 p-4 rounded-2xl border transition-all active:scale-95',
-                      d.bgColor, d.borderColor
-                    )}
-                  >
-                    <span className="text-2xl">{d.icon}</span>
-                    <div>
-                      <p className={cn('text-[13px] font-black leading-tight', d.textColor)}>{d.name}</p>
-                      <p className="text-[10px] text-zinc-500 mt-0.5 leading-tight">{d.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Step: choose target player */}
-          {step === 'choose_target' && def && (
-            <>
-              <button onClick={() => setStep('choose_type')} className="text-zinc-500 text-[11px] font-bold mb-3">
-                ← Back
-              </button>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-4 text-center">
-                <span className={def.textColor}>{def.icon} {def.name}</span> — Choose an opponent
-              </p>
-              <div className="space-y-2">
-                {availableTargets.length === 0 && (
-                  <p className="text-center text-zinc-600 text-sm py-8">
-                    All opponents have already been targeted
-                  </p>
-                )}
-                {availableTargets.map(s => {
-                  const displayName = s.username ?? s.userId.slice(0, 8);
-                  return (
-                    <button
-                      key={s.userId}
-                      onClick={() => handleSelectTarget(s.userId, displayName)}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-zinc-800 bg-zinc-900 active:bg-zinc-800 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-[11px] font-black text-zinc-400 uppercase">
-                        {displayName.slice(0, 2)}
-                      </div>
-                      <p className="font-black text-[13px] text-white uppercase tracking-tight">
-                        {displayName}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-
-          {/* Step: choose fight */}
-          {step === 'choose_fight' && def && (
-            <>
-              <button onClick={() => setStep(def.selfTarget ? 'choose_type' : 'choose_target')} className="text-zinc-500 text-[11px] font-bold mb-3">
-                ← Back
-              </button>
-              <p className="text-[11px] uppercase tracking-[0.2em] text-zinc-500 font-black mb-4 text-center">
-                <span className={def.textColor}>{def.icon} {def.name}</span> — Choose a fight
-              </p>
-              <div className="space-y-2">
-                {availableFights.map(f => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleSelectFight(f)}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-zinc-800 bg-zinc-900 active:bg-zinc-800 transition-colors text-left"
-                  >
-                    {f.isMainEvent && (
-                      <span className="text-[8px] font-black text-red-500 bg-red-950/60 px-1.5 py-0.5 rounded-md uppercase tracking-wider shrink-0">Main</span>
-                    )}
-                    <div>
-                      <p className="text-[12px] font-black text-white uppercase tracking-tight leading-tight">
-                        {f.fighterA.name.split(' ').pop()} vs {f.fighterB.name.split(' ').pop()}
-                      </p>
-                      <p className="text-[9px] text-zinc-500 font-bold">{f.division}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Step: confirm */}
-          {step === 'confirm' && def && (
-            <>
-              <div className="flex flex-col items-center gap-5 py-4">
-                <div className={cn('w-16 h-16 rounded-2xl flex items-center justify-center text-4xl', def.bgColor, 'border', def.borderColor)}>
-                  {def.icon}
-                </div>
-                <div className="text-center">
-                  <p className={cn('text-xl font-black', def.textColor)}>{def.name}</p>
-                  {selectedFight && (
-                    <p className="text-zinc-400 text-sm mt-1">
-                      {def.selfTarget ? 'On ' : `${targetName} · `}
-                      <span className="font-bold text-white">
-                        {selectedFight.fighterA.name.split(' ').pop()} vs {selectedFight.fighterB.name.split(' ').pop()}
-                      </span>
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={handleConfirm}
-                  className={cn(
-                    'w-full py-4 rounded-2xl font-black text-[14px] uppercase tracking-wider transition-all active:scale-95',
-                    def.bgColor, def.textColor, 'border', def.borderColor
-                  )}
-                >
-                  Play power up ✓
-                </button>
-                <button onClick={() => setStep('choose_type')} className="text-zinc-600 text-[11px] font-bold">
-                  Cancel
-                </button>
-              </div>
-            </>
-          )}
         </div>
       </div>
     </>
@@ -544,15 +306,19 @@ export function MobileLayout() {
       {profileOpen && <ProfileEditor onClose={() => setProfileOpen(false)} />}
 
       {/* ── Atout Modal ──────────────────────────────────────────────────── */}
-      <AtoutModal
+      <AtoutPlayModal
         open={atoutOpen}
         onClose={() => setAtoutOpen(false)}
         fights={allFights}
-        standings={standings as { userId: string; username?: string }[]}
+        members={standings.map((s: { userId: string; username?: string }) => ({
+          userId: s.userId,
+          username: s.username ?? s.userId.slice(0, 8),
+        }))}
         currentUserId={currentUserId}
-        atoutsState={atoutsState}
-        onPlay={atoutsState.play}
-        currentUserName={currentUserName}
+        atoutsState={atoutsState.atouts}
+        onPlay={(type, fightId, targetUserId, targetUserName) =>
+          atoutsState.play({ type, playedByUserId: currentUserId, playedByName: currentUserName, fightId, targetUserId, targetUserName })
+        }
       />
     </div>
   );
