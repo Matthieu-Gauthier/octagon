@@ -223,8 +223,10 @@ export class LeaguesService {
       return bet.winnerId === fight.fighterAId ? fight.fighterBId : fight.fighterAId;
     };
 
-    // Build standings with atout effects
-    const standings = league.members.map((member) => {
+    // Build standings with atout effects — exclude members with no bets on this event
+    const standings = league.members
+      .filter((member) => (betsByUser.get(member.userId) || []).length > 0)
+      .map((member) => {
       const userId = member.userId;
       const userBets = betsByUser.get(userId) || [];
       let points = 0;

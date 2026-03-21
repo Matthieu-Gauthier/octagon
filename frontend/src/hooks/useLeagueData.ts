@@ -141,12 +141,12 @@ export function useLeagueData(leagueId: string, eventId?: string) {
     const fights: Fight[] = currentEvent?.fights ?? [];
     const finishedFights  = fights.filter(f => f.status === "FINISHED" && f.winnerId);
 
-    // Backend already computes points with atout effects — just sort
+    // Backend already computes standings and excludes members with no bets — just sort
     const standings = [...(rawStandings ?? [])].sort((a, b) => {
-        if (b.points  !== a.points)  return b.points  - a.points;
-        if ((b.perfectPicks ?? 0) !== (a.perfectPicks ?? 0)) return (b.perfectPicks ?? 0) - (a.perfectPicks ?? 0);
-        return b.correct - a.correct;
-    });
+            if (b.points  !== a.points)  return b.points  - a.points;
+            if ((b.perfectPicks ?? 0) !== (a.perfectPicks ?? 0)) return (b.perfectPicks ?? 0) - (a.perfectPicks ?? 0);
+            return b.correct - a.correct;
+        });
 
     const myBets = (allBets ?? []).filter(b => b.userId === currentUserId);
 

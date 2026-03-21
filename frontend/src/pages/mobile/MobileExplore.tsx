@@ -167,24 +167,44 @@ export function MobileExplore() {
           </div>
         )}
 
-        {fights.map((fight: Fight) => {
-          const locked = isFightLocked(fight);
-          const pickVisible = selectedIsMe || locked;
-          const bet = pickVisible ? userBets.find(b => b.fightId === fight.id) : undefined;
+        {(() => {
+          const mainCard = fights.filter((f: Fight) => f.isMainCard);
+          const prelims = fights.filter((f: Fight) => !f.isMainCard);
+          const renderRow = (fight: Fight) => {
+            const locked = isFightLocked(fight);
+            const pickVisible = selectedIsMe || locked;
+            const bet = pickVisible ? userBets.find(b => b.fightId === fight.id) : undefined;
+            return (
+              <ExplorerFightRow
+                key={fight.id}
+                fight={fight}
+                bet={bet}
+                atouts={atoutsState?.atouts ?? []}
+                userId={selectedUserId}
+                scoring={scoring}
+                allBets={allBets}
+                getUserName={getUserName}
+                pickVisible={pickVisible}
+              />
+            );
+          };
           return (
-            <ExplorerFightRow
-              key={fight.id}
-              fight={fight}
-              bet={bet}
-              atouts={atoutsState?.atouts ?? []}
-              userId={selectedUserId}
-              scoring={scoring}
-              allBets={allBets}
-              getUserName={getUserName}
-              pickVisible={pickVisible}
-            />
+            <>
+              {mainCard.length > 0 && (
+                <>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 pt-1">Main Card</p>
+                  {mainCard.map(renderRow)}
+                </>
+              )}
+              {prelims.length > 0 && (
+                <>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-zinc-600 pt-3">Prelims</p>
+                  {prelims.map(renderRow)}
+                </>
+              )}
+            </>
           );
-        })}
+        })()}
       </div>
     </div>
   );

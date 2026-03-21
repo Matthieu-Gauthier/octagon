@@ -439,11 +439,12 @@ export function LeagueDashboard() {
 
   // Backend already computes standings with atout effects applied — just sort
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // Backend excludes members with no bets — just sort
   const sortedStandings = [...(leagueStandings || [])].sort((a: any, b: any) => {
-    if (b.points !== a.points) return b.points - a.points;
-    if ((b.perfectPicks ?? 0) !== (a.perfectPicks ?? 0)) return (b.perfectPicks ?? 0) - (a.perfectPicks ?? 0);
-    return b.correct - a.correct;
-  });
+      if (b.points !== a.points) return b.points - a.points;
+      if ((b.perfectPicks ?? 0) !== (a.perfectPicks ?? 0)) return (b.perfectPicks ?? 0) - (a.perfectPicks ?? 0);
+      return b.correct - a.correct;
+    });
 
   const activeUserId = selectedUserId || currentUserId;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -637,10 +638,13 @@ export function LeagueDashboard() {
       {/* Atout bar */}
       {!locked && (() => {
         const myAtout = playedBy(currentUserId);
-        const members = (league.members ?? []).map((m) => ({
-          userId: m.userId,
-          username: m.user?.username || m.userId,
-        }));
+        const activeUserIds = new Set(sortedStandings.map((s: any) => s.userId));
+        const members = (league.members ?? [])
+          .filter((m) => activeUserIds.has(m.userId))
+          .map((m) => ({
+            userId: m.userId,
+            username: m.user?.username || m.userId,
+          }));
         const allFights = event.fights ?? [];
         const handlePlay = (type: AtoutType, fightId: string, targetUserId?: string, targetUserName?: string) => {
           playAtout({ type, playedByUserId: currentUserId, playedByName: getUserName(currentUserId), fightId, targetUserId, targetUserName });
