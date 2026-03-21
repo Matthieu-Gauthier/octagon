@@ -3,6 +3,7 @@ import { useParams, useOutletContext } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fmtHeight, fmtReach, fmtWeight } from '@/lib/fighterStats';
+import { FighterFlag } from '@/components/FighterFlag';
 import { useEvents } from '@/hooks/useEvents';
 import { useBets, usePlaceBet, useRemoveBet } from '@/hooks/useBets';
 import { useLeague } from '@/hooks/useLeagues';
@@ -235,9 +236,12 @@ function FightCardItem({
       <div className="shrink-0 flex border-t border-zinc-900/60">
         {/* Fighter A */}
         <div className={cn('flex-1 px-3 py-2.5 transition-all', selectedA && 'bg-blue-950/20')}>
-          <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedA ? 'text-blue-300' : 'text-white')}>
-            {fight.fighterA.name.split(' ').pop()}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <FighterFlag hometown={fight.fighterA.hometown} />
+            <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedA ? 'text-blue-300' : 'text-white')}>
+              {fight.fighterA.name.split(' ').pop()}
+            </p>
+          </div>
           <p className="text-[9px] text-zinc-600 font-bold mt-0.5">
             {fight.fighterA.wins ?? 0} - {fight.fighterA.losses ?? 0} - {fight.fighterA.draws ?? 0}
             {(fight.fighterA.noContests ?? 0) > 0 && (
@@ -249,9 +253,12 @@ function FightCardItem({
         <div className="w-px bg-zinc-900/60 my-2" />
         {/* Fighter B */}
         <div className={cn('flex-1 px-3 py-2.5 text-right transition-all', selectedB && 'bg-red-950/20')}>
-          <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedB ? 'text-red-300' : 'text-white')}>
-            {fight.fighterB.name.split(' ').pop()}
-          </p>
+          <div className="flex items-center justify-end gap-1.5">
+            <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedB ? 'text-red-300' : 'text-white')}>
+              {fight.fighterB.name.split(' ').pop()}
+            </p>
+            <FighterFlag hometown={fight.fighterB.hometown} />
+          </div>
           <p className="text-[9px] text-zinc-600 font-bold mt-0.5">
             {fight.fighterB.wins ?? 0} - {fight.fighterB.losses ?? 0} - {fight.fighterB.draws ?? 0}
             {(fight.fighterB.noContests ?? 0) > 0 && (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { fmtHeight, fmtReach, fmtWeight } from "@/lib/fighterStats";
+import { FighterFlag } from "@/components/FighterFlag";
 import { Lock, Flame } from "lucide-react";
 import { FightPickControls } from "@/components/FightPickControls";
 import type { Fight, Fighter } from "@/types/api";
@@ -369,20 +370,26 @@ export function ShowcaseFightCard({
                     <div>
                         {/* Row 1: names */}
                         <div className="flex justify-between">
-                            <p className={cn(
-                                "font-black uppercase tracking-tight leading-none drop-shadow-lg transition-colors",
-                                nameSize,
-                                selectedA ? "text-blue-300" : "text-white",
-                            )}>
-                                {fight.fighterA.name.split(" ").pop()}
-                            </p>
-                            <p className={cn(
-                                "font-black uppercase tracking-tight leading-none drop-shadow-lg transition-colors",
-                                nameSize,
-                                selectedB ? "text-red-300" : "text-white",
-                            )}>
-                                {fight.fighterB.name.split(" ").pop()}
-                            </p>
+                            <div className="flex items-center gap-1.5">
+                                <FighterFlag hometown={fight.fighterA.hometown} />
+                                <p className={cn(
+                                    "font-black uppercase tracking-tight leading-none drop-shadow-lg transition-colors",
+                                    nameSize,
+                                    selectedA ? "text-blue-300" : "text-white",
+                                )}>
+                                    {fight.fighterA.name.split(" ").pop()}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <p className={cn(
+                                    "font-black uppercase tracking-tight leading-none drop-shadow-lg transition-colors",
+                                    nameSize,
+                                    selectedB ? "text-red-300" : "text-white",
+                                )}>
+                                    {fight.fighterB.name.split(" ").pop()}
+                                </p>
+                                <FighterFlag hometown={fight.fighterB.hometown} />
+                            </div>
                         </div>
 
                         {/* Row 2: W-L-D | form centered | W-L-D */}
