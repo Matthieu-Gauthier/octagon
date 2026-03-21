@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -94,6 +94,34 @@ function AtoutBadge({ atout }: { atout: PlayedAtout }) {
       <span>{def.name}</span>
     </div>
   );
+}
+
+/* ─── Stat Row ─────────────────────────────────────────────────────────── */
+function StatRow({ label, a, b }: { label: string; a: React.ReactNode; b: React.ReactNode }) {
+  const isEmpty = (v: React.ReactNode) => v === '—' || v === undefined || v === null;
+  return (
+    <div className="flex items-center gap-1">
+      <div className={cn('text-[9px] font-black flex-1', isEmpty(a) ? 'text-zinc-700' : 'text-zinc-300')}>
+        {a ?? '—'}
+      </div>
+      <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest w-10 text-center shrink-0">
+        {label}
+      </span>
+      <div className={cn('text-[9px] font-black flex-1 flex justify-end', isEmpty(b) ? 'text-zinc-700' : 'text-zinc-300')}>
+        {b ?? '—'}
+      </div>
+    </div>
+  );
+}
+
+function WinsByChips({ ko, sub, dec, reverse }: { ko: number; sub: number; dec: number; reverse?: boolean }) {
+  if (!ko && !sub && !dec) return <span className="text-zinc-700">—</span>;
+  const chips = [
+    ko > 0 && <span key="ko" className="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300 text-[8px] font-black">{ko} KO</span>,
+    sub > 0 && <span key="sub" className="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300 text-[8px] font-black">{sub} SUB</span>,
+    dec > 0 && <span key="dec" className="px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-900 text-zinc-300 text-[8px] font-black">{dec} DEC</span>,
+  ].filter(Boolean);
+  return <div className="flex items-center gap-1">{reverse ? chips.reverse() : chips}</div>;
 }
 
 /* ─── Fight Card ───────────────────────────────────────────────────────── */
@@ -282,61 +310,31 @@ function FightCardItem({
           </div>
         </div>
 
-        {/* Row 2 — Victoires par méthode */}
-        <div className="flex items-center gap-1">
-          <div className="flex gap-1.5">
-            {(fight.fighterA.winsByKo ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-red-500">{fight.fighterA.winsByKo} KO</span>
-            )}
-            {(fight.fighterA.winsBySub ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-orange-500">{fight.fighterA.winsBySub} SUB</span>
-            )}
-            {(fight.fighterA.winsByDec ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-zinc-500">{fight.fighterA.winsByDec} DEC</span>
-            )}
-            {!(fight.fighterA.winsByKo) && !(fight.fighterA.winsBySub) && !(fight.fighterA.winsByDec) && (
-              <span className="text-[9px] font-bold text-zinc-700">—</span>
-            )}
-          </div>
-          <div className="flex-1" />
-          <div className="flex gap-1.5 justify-end">
-            {(fight.fighterB.winsByDec ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-zinc-500">{fight.fighterB.winsByDec} DEC</span>
-            )}
-            {(fight.fighterB.winsBySub ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-orange-500">{fight.fighterB.winsBySub} SUB</span>
-            )}
-            {(fight.fighterB.winsByKo ?? 0) > 0 && (
-              <span className="text-[9px] font-black text-red-500">{fight.fighterB.winsByKo} KO</span>
-            )}
-            {!(fight.fighterB.winsByKo) && !(fight.fighterB.winsBySub) && !(fight.fighterB.winsByDec) && (
-              <span className="text-[9px] font-bold text-zinc-700">—</span>
-            )}
-          </div>
-        </div>
-
-        {/* Row 3 — Age · Taille · Reach · Poids */}
-        {[
-          { label: 'Age',    a: fight.fighterA.age != null ? String(fight.fighterA.age) : undefined, b: fight.fighterB.age != null ? String(fight.fighterB.age) : undefined },
-          { label: 'Height', a: fight.fighterA.height, b: fight.fighterB.height },
-          { label: 'Reach',  a: fight.fighterA.reach,  b: fight.fighterB.reach  },
-          { label: 'Weight', a: fight.fighterA.weight, b: fight.fighterB.weight  },
-        ].map(({ label, a, b }) => {
-          if (!a && !b) return null;
-          return (
-            <div key={label} className="flex items-center gap-1">
-              <span className={cn('text-[9px] font-black flex-1', a ? 'text-zinc-300' : 'text-zinc-700')}>
-                {a ?? '—'}
-              </span>
-              <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest w-10 text-center shrink-0">
-                {label}
-              </span>
-              <span className={cn('text-[9px] font-black flex-1 text-right', b ? 'text-zinc-300' : 'text-zinc-700')}>
-                {b ?? '—'}
-              </span>
-            </div>
-          );
-        })}
+        {/* Rows 2-5 — Wins by method + fighter stats */}
+        {(() => {
+          const koA = fight.fighterA.winsByKo ?? 0;
+          const subA = fight.fighterA.winsBySub ?? 0;
+          const decA = fight.fighterA.winsByDec ?? 0;
+          const koB = fight.fighterB.winsByKo ?? 0;
+          const subB = fight.fighterB.winsBySub ?? 0;
+          const decB = fight.fighterB.winsByDec ?? 0;
+          return [
+            {
+              label: 'Wins by',
+              a: <WinsByChips ko={koA} sub={subA} dec={decA} />,
+              b: <WinsByChips ko={koB} sub={subB} dec={decB} reverse />,
+            },
+            { label: 'Age',    a: fight.fighterA.age != null ? String(fight.fighterA.age) : undefined, b: fight.fighterB.age != null ? String(fight.fighterB.age) : undefined },
+            { label: 'Height', a: fight.fighterA.height, b: fight.fighterB.height },
+            { label: 'Reach',  a: fight.fighterA.reach,  b: fight.fighterB.reach  },
+            { label: 'Weight', a: fight.fighterA.weight, b: fight.fighterB.weight  },
+          ].map(({ label, a, b }) => {
+            if (!a && !b) return null;
+            return (
+              <StatRow key={label} label={label} a={a ?? '—'} b={b ?? '—'} />
+            );
+          });
+        })()}
       </div>
 
       {/* ── Pick controls — single row, fixed height ───────────────────── */}

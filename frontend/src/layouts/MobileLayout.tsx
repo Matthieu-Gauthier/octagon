@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, useParams } from 'react-router-dom';
+import { NavLink, Outlet, useParams, useNavigate } from 'react-router-dom';
 import { ProfileEditor } from '@/components/ProfileEditor';
-import { Flame, Trophy, Compass, ChevronDown, Check } from 'lucide-react';
+import { Flame, Trophy, Compass, ChevronDown, ChevronLeft, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEvents } from '@/hooks/useEvents';
 import { useAuth } from '@/context/AuthContext';
@@ -372,6 +372,7 @@ function AtoutModal({
 
 export function MobileLayout() {
   const { leagueId = '' } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: events } = useEvents();
   const [atoutOpen, setAtoutOpen] = useState(false);
@@ -430,6 +431,13 @@ export function MobileLayout() {
 
       {/* ── Minimal Header ──────────────────────────────────────────────── */}
       <header className="shrink-0 h-12 flex items-center gap-2 px-4 z-10">
+        <button
+          onClick={() => navigate('/leagues')}
+          className="shrink-0 text-zinc-500 active:text-zinc-300 transition-colors"
+          aria-label="Back to leagues"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
         <button
           onClick={() => setEventPickerOpen(true)}
           className="flex items-center gap-1 group min-w-0 shrink truncate"

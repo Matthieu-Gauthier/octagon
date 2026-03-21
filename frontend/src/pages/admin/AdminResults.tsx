@@ -1,13 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { EventSelector } from "@/components/EventSelector";
 import { useEvents, useFetchNextEvent, useRemoveEvent } from "@/hooks/useEvents";
 import { useUpdateFightResult } from "@/hooks/useAdminFights";
 import { EventSkeleton } from "@/components/skeletons/EventSkeleton";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronRight, Eye, EyeOff, RotateCcw, Trash2 } from "lucide-react";
+import { Eye, EyeOff, RotateCcw, Trash2 } from "lucide-react";
 
 export function AdminResults() {
     const { data: events, isLoading, error } = useEvents();
@@ -15,12 +13,23 @@ export function AdminResults() {
     const fetchEventMutation = useFetchNextEvent();
     const removeEventMutation = useRemoveEvent();
 
-    // Default to first event ID once loaded
     const [currentEventId, setCurrentEventId] = useState<string>("");
 
-    // Initialize currentEventId when events load
+    // Smart event auto-selection: LIVE first, then most recent FINISHED, then first
     useEffect(() => {
         if (events && events.length > 0 && !currentEventId) {
+            const liveEvent = events.find(e => e.status === "LIVE");
+            if (liveEvent) {
+                setCurrentEventId(liveEvent.id);
+                return;
+            }
+            const finishedEvents = events
+                .filter(e => e.status === "FINISHED")
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (finishedEvents.length > 0) {
+                setCurrentEventId(finishedEvents[0].id);
+                return;
+            }
             setCurrentEventId(events[0].id);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -28,20 +37,15 @@ export function AdminResults() {
 
     const currentEvent = events?.find(e => e.id === currentEventId);
 
-    // Local state to hold temporary results
     const [results, setResults] = useState<Record<string, { winnerId: string; method: string; round: number }>>({});
-
-    // UI State
     const [hideCompleted, setHideCompleted] = useState(false);
-    const [mainCardOpen, setMainCardOpen] = useState(true);
-    const [prelimsOpen, setPrelimsOpen] = useState(true);
 
     const handleRemoveEvent = () => {
         if (currentEvent && window.confirm(`Are you sure you want to remove ${currentEvent.name}? This will delete all associated fights and bets.`)) {
             removeEventMutation.mutate(currentEvent.id, {
                 onSuccess: () => {
-                    setCurrentEventId(""); // Reset selection
-                    window.alert(`Event removed successfully.`);
+                    setCurrentEventId("");
+                    window.alert("Event removed successfully.");
                 },
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 onError: (err: any) => {
@@ -60,12 +64,8 @@ export function AdminResults() {
                 round: fight.round || 0
             };
 
-            const newResult = {
-                ...current,
-                [field]: value
-            };
+            const newResult = { ...current, [field]: value };
 
-            // Check if ready to save
             const isDrawOrNC = newResult.method === "DRAW" || newResult.method === "NC";
             const isComplete = isDrawOrNC ||
                 (newResult.winnerId && newResult.method && (newResult.method === "DECISION" || newResult.round > 0));
@@ -82,10 +82,7 @@ export function AdminResults() {
                 });
             }
 
-            return {
-                ...prev,
-                [fight.id]: newResult
-            };
+            return { ...prev, [fight.id]: newResult };
         });
     };
 
@@ -102,73 +99,104 @@ export function AdminResults() {
     };
 
     if (isLoading) return <EventSkeleton />;
-    if (error) return <div className="text-red-500">Failed to load events.</div>;
+    if (error) return <div className="text-red-500 p-8">Failed to load events.</div>;
 
-    // Header logic abstracted here to be visible even if no events
+    const statusBadge = (status?: string) => {
+        if (!status) return null;
+        const styles: Record<string, string> = {
+            LIVE: "bg-red-500/20 text-red-400 border border-red-500/30",
+            FINISHED: "bg-zinc-800 text-zinc-400 border border-zinc-700",
+            SCHEDULED: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+        };
+        return (
+            <span className={cn("text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full", styles[status] || styles.SCHEDULED)}>
+                {status}
+            </span>
+        );
+    };
+
     const renderHeader = () => (
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-zinc-900/50 p-6 rounded-xl border border-zinc-800 gap-4">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Fight Results</h1>
-                <p className="text-zinc-400">Manage official outcomes for {currentEvent?.name || "events"}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                {currentEvent && (
-                    <Button
-                        variant={hideCompleted ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setHideCompleted(!hideCompleted)}
-                        className="gap-2"
-                    >
-                        {hideCompleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        {hideCompleted ? "Show All" : "Hide Completed"}
-                    </Button>
-                )}
+        <div className="bg-zinc-900 border-b border-zinc-800 px-8 py-5">
+            <div className="flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-xl font-black text-white tracking-tight truncate">
+                            {currentEvent?.name || "Fight Results"}
+                        </h1>
+                        {statusBadge(currentEvent?.status)}
+                    </div>
+                    <p className="text-zinc-600 text-xs">
+                        {currentEvent
+                            ? new Date(currentEvent.date).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+                            : "Select an event to manage results"}
+                    </p>
+                </div>
 
-                <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => fetchEventMutation.mutate(undefined, {
-                        onSuccess: () => window.alert("Upcoming event fetched successfully!"),
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        onError: (err: any) => window.alert(`Failed to fetch event: ${err?.message || "Check the console."}`)
-                    })}
-                    disabled={fetchEventMutation.isPending}
-                    className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white"
-                >
-                    {fetchEventMutation.isPending ? "Fetching..." : "Fetch Upcoming Event"}
-                </Button>
-
-                {currentEvent && (
-                    <>
-                        <div className="h-6 w-px bg-zinc-800 mx-1 hidden sm:block" />
-                        <EventSelector currentEvent={currentEvent} onEventChange={setCurrentEventId} />
-                        <Button
-                            variant="destructive"
-                            size="icon"
-                            onClick={handleRemoveEvent}
-                            disabled={removeEventMutation.isPending}
-                            className="w-9 h-9 shrink-0"
-                            title="Remove Event"
+                <div className="flex items-center gap-2 shrink-0">
+                    {currentEvent && (
+                        <button
+                            onClick={() => setHideCompleted(!hideCompleted)}
+                            className={cn(
+                                "flex items-center gap-1.5 text-xs font-medium px-3 h-7 rounded-full border transition-colors",
+                                hideCompleted
+                                    ? "bg-zinc-700 text-white border-zinc-600"
+                                    : "bg-transparent text-zinc-500 border-zinc-700 hover:text-zinc-300 hover:border-zinc-600"
+                            )}
                         >
-                            <Trash2 className="w-4 h-4" />
-                        </Button>
-                    </>
-                )}
+                            {hideCompleted ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            {hideCompleted ? "Show All" : "Hide Completed"}
+                        </button>
+                    )}
+
+                    <button
+                        onClick={() => fetchEventMutation.mutate(undefined, {
+                            onSuccess: () => window.alert("Upcoming event fetched successfully!"),
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                            onError: (err: any) => window.alert(`Failed to fetch event: ${err?.message || "Check the console."}`)
+                        })}
+                        disabled={fetchEventMutation.isPending}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 h-7 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50"
+                    >
+                        {fetchEventMutation.isPending ? "Fetching..." : "Fetch Event"}
+                    </button>
+
+                    {currentEvent && (
+                        <>
+                            <EventSelector currentEvent={currentEvent} onEventChange={setCurrentEventId} />
+                            <button
+                                onClick={handleRemoveEvent}
+                                disabled={removeEventMutation.isPending}
+                                title="Remove Event"
+                                className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            >
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
 
     if (!events || events.length === 0) return (
-        <div className="space-y-8 pb-20 w-full max-w-4xl mx-auto">
+        <div>
             {renderHeader()}
-            <div className="text-zinc-400 text-center py-12 bg-zinc-900/20 rounded-xl border border-zinc-800/50">
-                No events found. Click "Fetch Upcoming Event" to populate the database.
+            <div className="p-8">
+                <div className="text-zinc-500 text-sm text-center py-16 bg-zinc-900/40 rounded-xl border border-zinc-800/50">
+                    No events found. Click "Fetch Event" to populate the database.
+                </div>
             </div>
         </div>
     );
-    if (!currentEvent) return <div>Select an event to manage results.</div>;
 
-    // Sorting Logic: Main Event -> Co-Main -> Main Card -> Prelims
+    if (!currentEvent) return (
+        <div>
+            {renderHeader()}
+            <div className="p-8 text-zinc-500 text-sm">Select an event to manage results.</div>
+        </div>
+    );
+
+    // Sorting: Main Event -> Co-Main -> Main Card -> Prelims
     let sortedFights = [...(currentEvent.fights || [])].sort((a, b) => {
         if (a.isMainEvent) return -1;
         if (b.isMainEvent) return 1;
@@ -176,19 +204,18 @@ export function AdminResults() {
         if (b.isCoMainEvent) return 1;
         if (a.isMainCard && !b.isMainCard) return -1;
         if (!a.isMainCard && b.isMainCard) return 1;
-        return 0; // Keep original order otherwise
+        return 0;
     });
 
     if (hideCompleted) {
-        sortedFights = sortedFights.filter(f => !f.method); // Using method to detect completion since DRAW/NC have no winner
+        sortedFights = sortedFights.filter(f => !f.method);
     }
 
     const mainCardFights = sortedFights.filter(f => f.isMainCard);
     const prelimFights = sortedFights.filter(f => !f.isMainCard);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const renderFightCard = (fight: any) => {
-        // Init state from existing fight data if not in local state
+    const renderFightRow = (fight: any) => {
         const currentResult = results[fight.id] || {
             winnerId: fight.winnerId || "",
             method: fight.method || "",
@@ -198,157 +225,119 @@ export function AdminResults() {
         const isDrawOrNC = currentResult.method === "DRAW" || currentResult.method === "NC";
         const isSaved = !!fight.method;
         const isDecision = currentResult.method === "DECISION";
-
-        // Show saving feedback
         const isUpdatingThisFight = updateResult.variables?.fightId === fight.id && updateResult.isPending;
+        const showRounds = !isDecision && !isDrawOrNC;
+
+        const METHODS = [
+            { label: "KO/TKO", value: "KO/TKO" },
+            { label: "SUB",    value: "SUBMISSION" },
+            { label: "DEC",    value: "DECISION" },
+            { label: "DRAW",   value: "DRAW" },
+            { label: "NC",     value: "NC" },
+        ];
+        const maxRounds = fight.rounds || 3;
 
         return (
-            <Card key={fight.id} className={cn("transition-all overflow-hidden border-zinc-800", isSaved ? "opacity-60 hover:opacity-100" : "")}>
-                <div className="p-3 sm:p-4 flex flex-col gap-3">
-                    {/* Header Row: Matchup & Status */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 overflow-hidden">
-                            {fight.isMainEvent && <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 h-5 text-zinc-400 border-zinc-700">Main</Badge>}
-                            {fight.isCoMainEvent && <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0 h-5 text-zinc-400 border-zinc-700">Co-Main</Badge>}
-                            <div className="flex items-center gap-2 text-sm font-medium truncate">
-                                <span className={cn(fight.winnerId === fight.fighterA.id ? "text-white font-bold" : "text-zinc-400")}>{fight.fighterA.name}</span>
-                                <span className="text-zinc-600 text-xs">vs</span>
-                                <span className={cn(fight.winnerId === fight.fighterB.id ? "text-white font-bold" : "text-zinc-400")}>{fight.fighterB.name}</span>
-                            </div>
-                        </div>
+            <div key={fight.id} className={cn("flex items-center border-b border-zinc-800/50 transition-opacity group", isSaved ? "opacity-50 hover:opacity-100" : "")}>
 
-                        <div className="flex items-center gap-2 ml-auto sm:ml-0">
-                            {isUpdatingThisFight && <span className="text-xs text-zinc-500 animate-pulse">Saving...</span>}
-                            {isSaved && !isUpdatingThisFight && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleReset(fight.id)}
-                                    disabled={isUpdatingThisFight}
-                                    className="h-7 px-2 text-zinc-500 hover:text-white"
-                                    title="Reset Result"
-                                >
-                                    <RotateCcw className="w-3 h-3 mr-1" /> Reset
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Controls Row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
-                        {/* Winner - Takes up more space on mobile, 4 cols on desktop */}
-                        <div className={cn("lg:col-span-4 grid grid-cols-2 gap-2 transition-opacity", isDrawOrNC ? "opacity-30 pointer-events-none" : "opacity-100")}>
-                            <Button
-                                variant={currentResult.winnerId === fight.fighterA.id ? "default" : "outline"}
-                                className={cn(
-                                    "h-9 text-xs justify-center px-1 truncate border-zinc-700",
-                                    currentResult.winnerId === fight.fighterA.id ? "bg-zinc-100 text-zinc-900 border-transparent hover:bg-white" : "hover:bg-zinc-800 text-zinc-400"
-                                )}
-                                onClick={() => handleResultChange(fight, "winnerId", fight.fighterA.id)}
-                                title={fight.fighterA.name}
-                                disabled={isDrawOrNC}
-                            >
-                                {fight.fighterA.name.split(' ').pop()}
-                            </Button>
-                            <Button
-                                variant={currentResult.winnerId === fight.fighterB.id ? "default" : "outline"}
-                                className={cn(
-                                    "h-9 text-xs justify-center px-1 truncate border-zinc-700",
-                                    currentResult.winnerId === fight.fighterB.id ? "bg-zinc-100 text-zinc-900 border-transparent hover:bg-white" : "hover:bg-zinc-800 text-zinc-400"
-                                )}
-                                onClick={() => handleResultChange(fight, "winnerId", fight.fighterB.id)}
-                                title={fight.fighterB.name}
-                                disabled={isDrawOrNC}
-                            >
-                                {fight.fighterB.name.split(' ').pop()}
-                            </Button>
-                        </div>
-
-                        {/* Method - 4 Cols */}
-                        <div className="lg:col-span-5 flex gap-1 bg-zinc-900/50 p-1 rounded-md border border-zinc-800/50 overflow-x-auto">
-                            {["KO/TKO", "SUB", "DEC", "DRAW/NC"].map((label) => {
-                                const value = label === "SUB" ? "SUBMISSION" : label === "DEC" ? "DECISION" : label === "DRAW/NC" ? "NC" : label;
-                                const isActive = currentResult.method === value || (value === "NC" && currentResult.method === "DRAW");
-                                return (
-                                    <button
-                                        key={label}
-                                        onClick={() => handleResultChange(fight, "method", value)}
-                                        className={cn(
-                                            "flex-1 h-7 px-1 rounded text-[10px] font-medium transition-all whitespace-nowrap min-w-[30px]",
-                                            isActive
-                                                ? "bg-zinc-100 text-zinc-900 font-bold shadow-sm"
-                                                : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-                                        )}
-                                    >
-                                        {label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        {/* Round - Dynamic based on fight rounds */}
-                        <div className={cn("lg:col-span-3 flex gap-1 bg-zinc-900/50 p-1 rounded-md border border-zinc-800/50 transition-opacity", (isDecision || isDrawOrNC) ? "opacity-30 pointer-events-none" : "opacity-100")}>
-                            {Array.from({ length: fight.rounds || 3 }, (_, i) => i + 1).map((round) => (
-                                <button
-                                    key={round}
-                                    onClick={() => handleResultChange(fight, "round", round)}
-                                    className={cn(
-                                        "flex-1 h-7 rounded text-[10px] font-bold transition-all",
-                                        currentResult.round === round
-                                            ? "bg-zinc-100 text-zinc-900 font-bold shadow-sm"
-                                            : "text-zinc-500 hover:bg-zinc-800 hover:text-zinc-300"
-                                    )}
-                                    disabled={isDecision || isDrawOrNC}
-                                >
-                                    {round}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                {/* Badge — 80px */}
+                <div className="w-20 shrink-0 px-4 py-2">
+                    {fight.isMainEvent && <span className="text-[9px] font-black uppercase text-amber-500 border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 rounded">Main</span>}
+                    {fight.isCoMainEvent && !fight.isMainEvent && <span className="text-[9px] font-black uppercase text-zinc-400 border border-zinc-700 px-1.5 py-0.5 rounded">Co-Main</span>}
                 </div>
-            </Card>
+
+                {/* Fighter A — flex-1 */}
+                <div className="flex-1 min-w-0 py-2 pr-2">
+                    <button onClick={() => !isDrawOrNC && handleResultChange(fight, "winnerId", fight.fighterA.id)} disabled={isDrawOrNC} title={fight.fighterA.name}
+                        className={cn("h-7 px-3 text-[11px] font-bold rounded truncate w-full transition-colors", currentResult.winnerId === fight.fighterA.id ? "bg-white text-zinc-900" : "bg-zinc-800/50 text-zinc-400 hover:text-white border border-zinc-700")}>
+                        {fight.fighterA.name}
+                    </button>
+                </div>
+
+                {/* vs */}
+                <span className="text-zinc-700 text-[10px] font-bold shrink-0 px-1">vs</span>
+
+                {/* Fighter B — flex-1 */}
+                <div className="flex-1 min-w-0 py-2 pl-2">
+                    <button onClick={() => !isDrawOrNC && handleResultChange(fight, "winnerId", fight.fighterB.id)} disabled={isDrawOrNC} title={fight.fighterB.name}
+                        className={cn("h-7 px-3 text-[11px] font-bold rounded truncate w-full transition-colors", currentResult.winnerId === fight.fighterB.id ? "bg-white text-zinc-900" : "bg-zinc-800/50 text-zinc-400 hover:text-white border border-zinc-700")}>
+                        {fight.fighterB.name}
+                    </button>
+                </div>
+
+                {/* Separator */}
+                <div className="w-px h-8 bg-zinc-800 mx-3 shrink-0" />
+
+                {/* Method — 220px */}
+                <div className="w-[220px] shrink-0 flex gap-1 py-2">
+                    {METHODS.map(({ label, value }) => (
+                        <button key={value} onClick={() => handleResultChange(fight, "method", value)}
+                            className={cn("flex-1 h-7 rounded text-[10px] font-bold transition-colors", currentResult.method === value ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:text-white hover:bg-zinc-800")}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Separator */}
+                <div className="w-px h-8 bg-zinc-800 mx-3 shrink-0" />
+
+                {/* Rounds — 140px (5 × 28px) */}
+                <div className={cn("w-[140px] shrink-0 flex gap-1 py-2", !showRounds && "opacity-0 pointer-events-none")}>
+                    {Array.from({ length: maxRounds }, (_, i) => i + 1).map((r) => (
+                        <button key={r} onClick={() => showRounds && handleResultChange(fight, "round", r)}
+                            className={cn("flex-1 h-7 rounded text-[10px] font-bold transition-colors", currentResult.round === r && showRounds ? "bg-zinc-100 text-zinc-900" : "text-zinc-600 hover:text-white hover:bg-zinc-800")}>
+                            {r}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Status / reset — 96px */}
+                <div className="w-24 shrink-0 flex items-center justify-end gap-2 px-4 py-2">
+                    {isUpdatingThisFight && <span className="animate-pulse text-zinc-500 text-[10px]">Saving…</span>}
+                    {isSaved && !isUpdatingThisFight && (
+                        <>
+                            <span className="text-emerald-500 text-xs">✓</span>
+                            <button onClick={() => handleReset(fight.id)} title="Reset"
+                                className="flex items-center gap-1 h-6 px-2 text-[10px] text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity rounded hover:bg-zinc-800">
+                                <RotateCcw className="w-2.5 h-2.5" /> Reset
+                            </button>
+                        </>
+                    )}
+                </div>
+
+            </div>
         );
     };
 
+    const sectionLabel = (title: string) => (
+        <div className="text-xs font-black uppercase tracking-widest text-zinc-600 pt-6 pb-2 px-4">
+            {title}
+        </div>
+    );
+
     return (
-        <div className="space-y-8 pb-20 w-full max-w-4xl mx-auto">
+        <div>
             {renderHeader()}
 
-            {mainCardFights.length > 0 && (
-                <div className="space-y-4">
-                    <button
-                        onClick={() => setMainCardOpen(!mainCardOpen)}
-                        className="flex items-center gap-2 text-xl font-bold px-1 text-white hover:text-zinc-300 transition-colors w-full text-left"
-                    >
-                        {mainCardOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                        Main Card
-                    </button>
-
-                    {mainCardOpen && (
-                        <div className="grid gap-6 animate-in slide-in-from-top-2 duration-200">
-                            {mainCardFights.map(renderFightCard)}
+            <div className="w-full max-w-5xl mx-auto pb-20">
+                {mainCardFights.length > 0 && (
+                    <>
+                        {sectionLabel("Main Card")}
+                        <div>
+                            {mainCardFights.map(renderFightRow)}
                         </div>
-                    )}
-                </div>
-            )}
+                    </>
+                )}
 
-            {prelimFights.length > 0 && (
-                <div className="space-y-4 pt-4">
-                    <button
-                        onClick={() => setPrelimsOpen(!prelimsOpen)}
-                        className="flex items-center gap-2 text-xl font-bold px-1 text-zinc-400 hover:text-zinc-300 transition-colors w-full text-left"
-                    >
-                        {prelimsOpen ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                        Prelims
-                    </button>
-
-                    {prelimsOpen && (
-                        <div className="grid gap-6 animate-in slide-in-from-top-2 duration-200">
-                            {prelimFights.map(renderFightCard)}
+                {prelimFights.length > 0 && (
+                    <>
+                        {sectionLabel("Prelims")}
+                        <div>
+                            {prelimFights.map(renderFightRow)}
                         </div>
-                    )}
-                </div>
-            )}
+                    </>
+                )}
+            </div>
         </div>
     );
 }

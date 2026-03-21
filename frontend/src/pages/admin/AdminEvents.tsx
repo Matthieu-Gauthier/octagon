@@ -1,37 +1,39 @@
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export function AdminEvents() {
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
+        <div className="p-8 space-y-8">
+            <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Events Management</h1>
-                    <p className="text-muted-foreground">Create and edit UFC events.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-white">Events</h1>
+                    <p className="text-zinc-500 text-sm mt-1">Create and edit UFC events</p>
                 </div>
-                <Button onClick={() => toast.info("Create Event functionality coming soon!")}>
-                    <Plus className="mr-2 h-4 w-4" />
+                <button
+                    onClick={() => toast.info("Create Event functionality coming soon!")}
+                    className="flex items-center gap-2 text-sm font-semibold px-4 h-9 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white border border-zinc-700 transition-colors"
+                >
+                    <Plus className="h-4 w-4" />
                     Create Event
-                </Button>
+                </button>
             </div>
 
-            <div className="grid gap-4">
-                <Card className="border-dashed border-2 shadow-none bg-muted/10 flex items-center justify-center p-10">
-                    <div className="text-center space-y-2">
-                        <div className="bg-primary/20 p-3 rounded-full w-fit mx-auto">
-                            <Plus className="h-6 w-6 text-primary" />
-                        </div>
-                        <h3 className="font-semibold text-lg">No events created yet</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                            Start by creating a new event, adding fights, and setting the schedule.
-                        </p>
-                        <Button variant="outline" className="mt-4">
-                            Create First Event
-                        </Button>
+            <div className="bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center p-14">
+                <div className="text-center space-y-3">
+                    <div className="bg-zinc-800 p-3 rounded-full w-fit mx-auto">
+                        <Plus className="h-5 w-5 text-zinc-500" />
                     </div>
-                </Card>
+                    <h3 className="font-semibold text-white">No events created yet</h3>
+                    <p className="text-sm text-zinc-500 max-w-xs mx-auto">
+                        Start by creating a new event, adding fights, and setting the schedule.
+                    </p>
+                    <button
+                        onClick={() => toast.info("Create Event functionality coming soon!")}
+                        className="mt-2 inline-flex items-center gap-2 text-sm font-medium px-4 h-8 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+                    >
+                        Create First Event
+                    </button>
+                </div>
             </div>
         </div>
     );
