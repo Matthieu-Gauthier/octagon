@@ -1,16 +1,19 @@
 # Octagon Constitution
 
 <!-- Sync Impact Report
-Version: 1.2.0
-Last Amended: 2026-02-19
+Version: 1.3.0
+Last Amended: 2026-03-15
 Changes:
-- Added "Mandatory Unit Testing (Jest)" principle.
-- Bumped version to 1.2.0 (New Principle).
+- Added Power-ups (Atouts) to Gameplay Mechanics.
+- Clarified Survivor mode is currently unused/disabled.
+- Added Supabase Realtime to Backend Architecture.
+- Added evening-play format to Gameplay Mechanics.
+- Bumped version to 1.3.0.
 -->
 
 ## Governance
 - **Ratified**: 2026-02-18
-- **Version**: 1.2.0
+- **Version**: 1.3.0
 - **Amendment Process**: Pull Request review by Repository Owner.
 
 ## Core Principles
@@ -25,6 +28,7 @@ Changes:
 - **Database**: PostgreSQL hosted on Unraid (`192.168.0.200`).
 - **ORM**: Prisma for type-safe database access.
 - **Auth**: Supabase JWT validation via Passport Strategy.
+- **Realtime**: Supabase Realtime used for live score and bet updates (subscribe by league).
 - **Observability**: Health check endpoint (`/health`) required for connectivity verification.
 
 ### 3. Mandatory Unit Testing (Jest)
@@ -38,11 +42,20 @@ Changes:
 - **State**: Zustand for global state (Bets, Auth).
 - **UI**: Shadcn/Radix primitives, Lucide icons, Dark Mode default.
 - **Routing**: React Router DOM.
+- **Language**: All UI text must be in **English** (labels, badges, buttons, placeholders).
+- **Fighter record format**: `W - L - D` with NC in parentheses if non-zero, e.g. `19 - 0 - 2 (1)` or `18 - 5 - 0`.
+- **Fighter stats displayed**: Age, Height, Reach, Weight (all optional — shown only when available). `age` / `dateOfBirth` fields are planned but not yet in the backend schema — frontend types are ready.
 
 ### 5. Gameplay Mechanics
-- **Betting**: Vegas-style fight cards. Bets locked after fight start time.
-- **Survivor**: Streak-based (Wrong pick = reset, Draw/NC = safe). Optional per league.
-- **Scoring**: Configurable per league (Winner/Method/Round/Decision points).
+- **Play format**: Games are played during a single UFC event evening. No real money — points only.
+- **Betting**: Vegas-style fight cards. Bets locked after fight start time (or event lock).
+- **Scoring**: Default — Winner = 10pts, Method = +5pts, Round = +5pts. Configurable per league via `scoringSettings`.
+- **Power-ups (Atouts)**: Each player gets 1 atout per event per league. Atouts are played on a fight or an opponent before the fight starts. Once played, visible to all. An opponent may only be targeted once per evening.
+  - **Dernière Chance**: x2 points on the main event (self-target only).
+  - **Exacto**: +15 bonus pts if winner + method + round are all correct (self-target only).
+  - **Inversion**: Flips an opponent's pick to the opposite fighter; locks their pick on that fight.
+  - **Dette**: If targeted opponent gets the fight correct, their points transfer to the player who played the atout.
+- **Survivor**: Streak-based (Wrong pick = reset, Draw/NC = safe). Optional per league. **Currently unused/disabled — do not implement Survivor features unless explicitly requested.**
 
 ### 6. Iterative Workflow (Spec-Kit)
 - **Spec-First**: Write/Update `specs/*.md` before implementation.

@@ -19,6 +19,8 @@ export interface Fighter {
     winsByKo?: number;
     winsBySub?: number;
     winsByDec?: number;
+    age?: number;
+    dateOfBirth?: string;
     height?: string;
     weight?: string;
     reach?: string;

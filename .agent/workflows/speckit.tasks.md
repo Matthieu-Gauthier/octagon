@@ -68,7 +68,7 @@ The tasks.md should be immediately executable - each task must be specific enoug
 
 **CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
 
-**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+**Tests**: Backend Jest tests are **REQUIRED** per constitution (every new service method needs a `.spec.ts`). Frontend tests are optional. Always generate backend test tasks.
 
 ### Checklist Format (REQUIRED)
 

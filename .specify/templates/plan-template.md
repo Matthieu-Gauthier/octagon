@@ -11,21 +11,16 @@
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: TypeScript (Node 20 backend, React 18 frontend)
+**Backend**: NestJS — Feature Modules in `backend/src/`. New modules follow the existing pattern (controller / service / module / spec).
+**Frontend**: React (Vite) + Tailwind CSS + Shadcn/Radix + Zustand + React Query
+**ORM / Database**: Prisma + PostgreSQL. Schema in `backend/prisma/schema.prisma`. Migrations via `npx prisma migrate dev`.
+**Auth**: Supabase JWT via `SupabaseGuard` on all protected routes. `req.user.sub` = Supabase UUID.
+**Realtime**: Supabase Realtime — subscribe by leagueId channel.
+**Testing**: Jest (backend unit tests required per constitution). Test files co-located as `*.spec.ts`.
+**Project Type**: Web app (monorepo — `backend/` + `frontend/`)
+**Scale/Scope**: Small friend groups (~2–20 users per league). No high-throughput requirements.
+**Constraints**: All scoring and data must be scoped to a `leagueId`. No global state for scores.
 
 ## Constitution Check
 

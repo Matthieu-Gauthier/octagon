@@ -130,18 +130,10 @@ export class LeaguesService {
     const league = await this.prisma.league.findUnique({
       where: { id: leagueId },
       include: {
-        members: {
-          include: {
-            user: true,
-          },
-        },
+        members: { include: { user: true } },
         bets: {
           include: {
-            fight: {
-              include: {
-                event: true,
-              },
-            },
+            fight: { include: { event: true } },
           },
         },
       },
@@ -149,30 +141,20 @@ export class LeaguesService {
 
     if (!league) throw new NotFoundException('League not found');
 
-    // Use the provided eventId if given, otherwise auto-detect (LIVE first, then latest by date)
+    // Determine current event
     let currentEventId: string | null = eventId ?? null;
-
     if (!currentEventId) {
-      const eventMap = new Map<
-        string,
-        { id: string; status: string; date: Date }
-      >();
+      const eventMap = new Map<string, { id: string; status: string; date: Date }>();
       for (const bet of league.bets) {
-        const event = bet.fight.event;
-        if (!eventMap.has(event.id)) {
-          eventMap.set(event.id, {
-            id: event.id,
-            status: event.status,
-            date: new Date(event.date),
-          });
-        }
+        const ev = bet.fight.event;
+        if (!eventMap.has(ev.id))
+          eventMap.set(ev.id, { id: ev.id, status: ev.status, date: new Date(ev.date) });
       }
-
       if (eventMap.size > 0) {
         const events = Array.from(eventMap.values());
-        const liveEvent = events.find((e) => e.status === 'LIVE');
-        if (liveEvent) {
-          currentEventId = liveEvent.id;
+        const live = events.find((e) => e.status === 'LIVE');
+        if (live) {
+          currentEventId = live.id;
         } else {
           events.sort((a, b) => b.date.getTime() - a.date.getTime());
           currentEventId = events[0].id;
@@ -181,70 +163,121 @@ export class LeaguesService {
     }
 
     const defaultSettings = { winner: 10, method: 5, round: 5, decision: 0 };
-    const settings = {
-      ...defaultSettings,
-      ...((league.scoringSettings as object) || {}),
-    };
+    const settings = { ...defaultSettings, ...((league.scoringSettings as object) || {}) } as typeof defaultSettings;
 
-    // Group bets by user, restricted to the current event only
-    const betsByUser = new Map<
-      string,
-      (Bet & { fight: Fight & { event: Event } })[]
-    >();
-    league.bets.forEach((bet) => {
-      if (currentEventId && bet.fight.eventId !== currentEventId) return;
+    // Fetch atouts for this event
+    const atouts = currentEventId
+      ? await this.prisma.atout.findMany({ where: { leagueId, eventId: currentEventId } })
+      : [];
+
+    // Build lookup: userId → fightId → bet (restricted to current event)
+    type BetWithFight = Bet & { fight: Fight & { event: Event } };
+    const betsByUser = new Map<string, BetWithFight[]>();
+    const allBetsIndex = new Map<string, Map<string, BetWithFight>>(); // userId → fightId → bet
+
+    for (const bet of league.bets) {
+      if (currentEventId && bet.fight.eventId !== currentEventId) continue;
       if (!betsByUser.has(bet.userId)) betsByUser.set(bet.userId, []);
       betsByUser.get(bet.userId)!.push(bet);
-    });
+      if (!allBetsIndex.has(bet.userId)) allBetsIndex.set(bet.userId, new Map());
+      allBetsIndex.get(bet.userId)!.set(bet.fightId, bet);
+    }
 
-    // Calculate points
+    // Compute fight points for a bet (with optional inverted winnerId)
+    const calcBetPoints = (
+      fight: Fight,
+      winnerId: string,
+      method: string | null,
+      round: number | null,
+    ) => {
+      if (winnerId !== fight.winnerId) return { points: 0, correct: false, perfect: false };
+      let pts = settings.winner;
+      let methodCorrect = false;
+      if (method && fight.method && method === fight.method) {
+        pts += settings.method;
+        methodCorrect = true;
+      }
+      const isDecision = method === 'DECISION' || method === 'DRAW';
+      let roundCorrect = false;
+      if (methodCorrect) {
+        if (isDecision) {
+          pts += settings.decision ?? 0;
+        } else if (round && fight.round && round === fight.round) {
+          pts += settings.round;
+          roundCorrect = true;
+        }
+      }
+      return {
+        points: pts,
+        correct: true,
+        perfect: methodCorrect && (roundCorrect || isDecision),
+      };
+    };
+
+    // Get the effective winnerId for a user's bet after INVERSION
+    const getEffectiveWinnerId = (bet: BetWithFight, fight: Fight, userId: string): string => {
+      const inv = atouts.find(
+        (a) => a.type === 'INVERSION' && a.targetUserId === userId && a.fightId === fight.id,
+      );
+      if (!inv) return bet.winnerId;
+      return bet.winnerId === fight.fighterAId ? fight.fighterBId : fight.fighterAId;
+    };
+
+    // Build standings with atout effects
     const standings = league.members.map((member) => {
-      const userBets = betsByUser.get(member.userId) || [];
+      const userId = member.userId;
+      const userBets = betsByUser.get(userId) || [];
       let points = 0;
       let perfectPicks = 0;
       let betsPlaced = 0;
-
       let correctWinners = 0;
 
       for (const bet of userBets) {
         const fight = bet.fight;
-        if (fight.status === 'FINISHED' && fight.winnerId) {
-          betsPlaced++;
+        if (fight.status !== 'FINISHED' || !fight.winnerId) continue;
+        betsPlaced++;
 
-          // Check Winner
-          if (bet.winnerId === fight.winnerId) {
-            correctWinners++;
-            points += settings.winner || 10;
+        // DETTE: target gets 0
+        const dette = atouts.find(
+          (a) => a.type === 'DETTE' && a.targetUserId === userId && a.fightId === fight.id,
+        );
+        if (dette) continue;
 
-            // Check Method
-            let methodCorrect = false;
-            if (bet.method && fight.method && bet.method === fight.method) {
-              points += settings.method || 5;
-              methodCorrect = true;
-            }
+        // Apply INVERSION
+        const effectiveWinnerId = getEffectiveWinnerId(bet, fight, userId);
+        const { points: fightPts, correct, perfect } = calcBetPoints(
+          fight, effectiveWinnerId, bet.method, bet.round,
+        );
 
-            // Check Round or Decision
-            const isDecisionPerfect =
-              methodCorrect &&
-              (bet.method === 'DECISION' || bet.method === 'DRAW');
-            let roundCorrect = false;
+        if (correct) correctWinners++;
+        if (perfect) perfectPicks++;
 
-            if (isDecisionPerfect) {
-              points +=
-                settings.decision !== undefined ? settings.decision : 10;
-            } else if (methodCorrect && bet.round && fight.round && bet.round === fight.round) {
-              points += settings.round || 5;
-              roundCorrect = true;
-            }
+        // DOUBLE: multiply
+        const double = atouts.find(
+          (a) => a.type === 'DOUBLE' && a.playedByUserId === userId && a.fightId === fight.id,
+        );
+        points += double ? fightPts * 2 : fightPts;
+      }
 
-            if (methodCorrect && (roundCorrect || isDecisionPerfect))
-              perfectPicks++;
-          }
-        }
+      // DETTE bonus: add stolen points
+      for (const atout of atouts) {
+        if (atout.type !== 'DETTE' || atout.playedByUserId !== userId || !atout.targetUserId) continue;
+        const targetBet = allBetsIndex.get(atout.targetUserId)?.get(atout.fightId);
+        if (!targetBet) continue;
+        const fight = targetBet.fight;
+        if (fight.status !== 'FINISHED' || !fight.winnerId) continue;
+
+        const effectiveWinnerId = getEffectiveWinnerId(targetBet, fight, atout.targetUserId);
+        const { points: stolen } = calcBetPoints(fight, effectiveWinnerId, targetBet.method, targetBet.round);
+        // If the target had DOUBLE on this fight, the stolen points are also doubled
+        const targetDouble = atouts.find(
+          (a) => a.type === 'DOUBLE' && a.playedByUserId === atout.targetUserId && a.fightId === fight.id,
+        );
+        points += targetDouble ? stolen * 2 : stolen;
       }
 
       return {
-        userId: member.userId,
+        userId,
         username: member.user.username,
         points,
         correct: correctWinners,
@@ -255,14 +288,8 @@ export class LeaguesService {
       };
     });
 
-    // Sort by points desc
     standings.sort((a, b) => b.points - a.points);
-
-    // Assign Ranks
-    standings.forEach((entry, index) => {
-      entry.rank = index + 1;
-    });
-
+    standings.forEach((entry, i) => { entry.rank = i + 1; });
     return standings;
   }
 }

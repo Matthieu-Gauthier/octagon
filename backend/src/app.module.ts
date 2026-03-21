@@ -15,6 +15,7 @@ import { AdminModule } from './admin/admin.module';
 import { HealthController } from './health/health.controller';
 import { JobsModule } from './jobs/jobs.module';
 import { UsersModule } from './users/users.module';
+import { AtoutsModule } from './atouts/atouts.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     JobsModule,
     UsersModule,
+    AtoutsModule,
   ],
   controllers: [AppController, HealthController],
   providers: [AppService, PrismaService],

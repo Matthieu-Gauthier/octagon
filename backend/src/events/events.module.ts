@@ -10,6 +10,6 @@ import { JobsModule } from '../jobs/jobs.module';
   imports: [PrismaModule, JobsModule],
   controllers: [EventsController],
   providers: [EventsService, ScraperService, UfcstatsEnrichmentService],
-  exports: [UfcstatsEnrichmentService],
+  exports: [EventsService, UfcstatsEnrichmentService],
 })
 export class EventsModule {}

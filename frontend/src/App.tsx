@@ -16,7 +16,6 @@ import { AdminEvents } from "@/pages/admin/AdminEvents";
 import { LeaguesHub } from "@/pages/leagues/LeaguesHub";
 import { CreateLeague } from "@/pages/leagues/CreateLeague";
 import { LeagueView } from "@/pages/leagues/LeagueView";
-import { SurvivorPick } from "@/pages/survivor/SurvivorPick";
 import { FightCardShowcase } from "@/pages/FightCardShowcase";
 import { MobileApp } from "@/pages/mobile/MobileApp";
 
@@ -83,7 +82,6 @@ function AppContent() {
             <Route path="/leagues" element={<ProtectedRoute><LeaguesHub /></ProtectedRoute>} />
             <Route path="/leagues/create" element={<ProtectedRoute><CreateLeague /></ProtectedRoute>} />
             <Route path="/leagues/:leagueId" element={<ProtectedRoute><LeagueView /></ProtectedRoute>} />
-            <Route path="/leagues/:leagueId/survivor/pick/:eventId" element={<ProtectedRoute><SurvivorPick /></ProtectedRoute>} />
             <Route path="/showcase" element={<FightCardShowcase />} />
           </Route>
 

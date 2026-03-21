@@ -1,12 +1,12 @@
 import { Fight } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, RotateCcw, Flame, Shield, Lock } from "lucide-react";
+import { Check, Flame, Shield, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { FighterPortrait } from "./FighterPortrait";
 import { getFlagForHometown } from "@/lib/flags";
 import { FighterStatsCenterPanel, RecentFormRow } from "./FighterStats";
-import { MobileFightCard } from "./MobileFightCard";
+import { FightPickControls } from "./FightPickControls";
 
 // ============================================================================
 // Types
@@ -21,22 +21,21 @@ export interface ResultBreakdown {
         methodCorrect: boolean;
         roundCorrect: boolean;
         points: number;
+        stolenPoints?: number;
     };
+    atoutApplied?: { type: string; icon?: string; name?: string };
 }
-
-const METHODS: { value: Method; short: string; icon: string; label: string }[] = [
-    { value: "KO/TKO", short: "KO", icon: "💥", label: "KO / TKO" },
-    { value: "SUBMISSION", short: "SUB", icon: "🔒", label: "Submission" },
-    { value: "DECISION", short: "DEC", icon: "📋", label: "Decision" },
-];
 
 
 // ============================================================================
 // RESULT CENTER (Shown when fight is FINISHED)
 // ============================================================================
 
-export function ResultCenter({ resultBreakdown }: { resultBreakdown: ResultBreakdown }) {
+export function ResultCenter({ resultBreakdown, showDetails }: { resultBreakdown: ResultBreakdown; showDetails?: boolean }) {
     const { userPick, result, scoring } = resultBreakdown;
+    const stolenPoints = scoring.stolenPoints ?? 0;
+    const isVictim = stolenPoints < 0;
+    const ownPoints = isVictim ? 0 : scoring.points - stolenPoints;
 
     const formatMethod = (method?: string, round?: number) => {
         if (!method) return "No Pick";
@@ -44,35 +43,53 @@ export function ResultCenter({ resultBreakdown }: { resultBreakdown: ResultBreak
         return `${method}${round ? ` R${round}` : ''}`;
     };
 
-    const pickText = userPick.winnerId
-        ? `${userPick.winnerName.split(' ').pop()} (${formatMethod(userPick.method, userPick.round)})`
-        : "No Pick";
-
-    const resultText = `${result.winnerName.split(' ').pop()} (${formatMethod(result.method, result.round)})`;
-
     return (
-        <div className="flex flex-col items-center justify-center w-[180px] py-4">
-            <div className="flex flex-col items-center">
-                <span className={cn(
-                    "text-4xl font-black drop-shadow-lg",
-                    scoring.points > 0 ? "text-yellow-500" : "text-zinc-700"
-                )}>
-                    +{scoring.points}
-                </span>
-            </div>
+        <div className="flex flex-col items-center justify-center py-4">
+            {/* Big number */}
+            <span className={cn(
+                "text-5xl font-black drop-shadow-lg leading-none",
+                isVictim ? "text-zinc-600" : scoring.points > 0 ? "text-yellow-400" : "text-zinc-600"
+            )}>
+                +{scoring.points}
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-widest text-zinc-500 mt-0.5">pts</span>
 
-            <div className="flex flex-col gap-1 w-full mt-2">
-                <div className="flex flex-col items-center justify-center text-center bg-zinc-900/80 p-2.5 rounded-t-xl border border-zinc-800 border-b-0 backdrop-blur-sm">
-                    <span className="text-zinc-500 font-bold uppercase tracking-widest text-[8px] mb-1">Your Pick</span>
-                    <span className={cn("font-black text-[11px] leading-tight", scoring.winnerCorrect ? "text-blue-400" : (userPick.winnerId ? "text-red-400 line-through opacity-80" : "text-zinc-600"))}>
-                        {pickText}
-                    </span>
+            {/* Victim of DETTE: show what was lost */}
+            {isVictim && Math.abs(stolenPoints) > 0 && (
+                <div className="flex flex-col items-center gap-0.5 mt-1.5">
+                    <span className="text-[9px] font-black text-rose-400">💀 -{Math.abs(stolenPoints)} stolen</span>
                 </div>
-                <div className="flex flex-col items-center justify-center text-center bg-emerald-950/30 p-2.5 rounded-b-xl border border-emerald-900/50 backdrop-blur-sm">
-                    <span className="text-emerald-500/70 font-bold uppercase tracking-widest text-[8px] mb-1">Actual Result</span>
-                    <span className="text-emerald-400 font-black text-[11px] leading-tight">{resultText}</span>
+            )}
+
+            {/* Breakdown when DETTE stolen (attacker side) */}
+            {!isVictim && stolenPoints > 0 && (
+                <div className="flex flex-col items-center gap-0.5 mt-1.5">
+                    {ownPoints > 0 && (
+                        <span className="text-[9px] font-bold text-amber-500/80">+{ownPoints} pick</span>
+                    )}
+                    <span className="text-[9px] font-black text-rose-400">💀 +{stolenPoints} stolen</span>
                 </div>
-            </div>
+            )}
+
+            {/* Your pick / Result — browser only */}
+            {showDetails && (
+                <div className="flex flex-col gap-1 w-48 mt-3">
+                    <div className="flex flex-col items-center bg-zinc-900/80 p-2.5 rounded-t-xl border border-zinc-800 border-b-0 backdrop-blur-sm">
+                        <span className="text-zinc-500 font-bold uppercase tracking-widest text-[8px] mb-1">Your Pick</span>
+                        <span className={cn("font-black text-[11px] leading-tight", scoring.winnerCorrect ? "text-blue-400" : (userPick.winnerId ? "text-red-400 line-through opacity-80" : "text-zinc-600"))}>
+                            {userPick.winnerId
+                                ? `${userPick.winnerName.split(' ').pop()} · ${formatMethod(userPick.method, userPick.round)}`
+                                : "No Pick"}
+                        </span>
+                    </div>
+                    <div className="flex flex-col items-center bg-emerald-950/30 p-2.5 rounded-b-xl border border-emerald-900/50 backdrop-blur-sm">
+                        <span className="text-emerald-500/70 font-bold uppercase tracking-widest text-[8px] mb-1">Result</span>
+                        <span className="text-emerald-400 font-black text-[11px] leading-tight">
+                            {result.winnerName.split(' ').pop()} · {formatMethod(result.method, result.round)}
+                        </span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -101,6 +118,7 @@ export interface ResultBreakdown {
         methodCorrect: boolean;
         roundCorrect: boolean;
         points: number;
+        stolenPoints?: number;
     };
 }
 
@@ -127,7 +145,6 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
     const [winner, setWinner] = useState<string | null>(value?.winnerId ?? null);
     const [method, setMethod] = useState<Method | null>((value?.method as Method) ?? null);
     const [round, setRound] = useState<number | null>(value?.round ?? null);
-    const [showDrawer, setShowDrawer] = useState(true);
 
     // Derive locked state: either externally forced, or lockAt timestamp has passed
     const isLocked = locked || (!!lockAt && new Date() >= new Date(lockAt));
@@ -144,66 +161,15 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
         ? !!winner
         : !!winner && !!method && (method === "DECISION" || !!round);
 
-    // Auto-close drawer 1s after pick is complete (only in full/admin mode)
-    // Auto-close drawer 1s after pick is complete (only in full mode)
-    useEffect(() => {
-        if (mode === "full" && isComplete && !isLocked) {
-            const timer = setTimeout(() => setShowDrawer(false), 1000);
-            return () => clearTimeout(timer);
-        } else if (!isComplete) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setShowDrawer(true);
-        }
-    }, [isComplete, method, round, mode, isLocked]);
-
-    const notifyChange = (w: string | null, m: Method | null, r: number | null) => {
-        const payload = w ? { winnerId: w, method: m ?? undefined, round: r ?? undefined } : null;
-        if (onPickChange) {
-            onPickChange(payload);
-        }
-    };
-
-    const handleFighterClick = (id: string, e: React.MouseEvent) => {
+    const handleFighterClick = (id: string, _e: React.MouseEvent) => {
         if (isLocked) return;
-        // Ignore clicks inside the selection drawer
-        if ((e.target as HTMLElement).closest('.selection-area')) return;
-
-        // Toggle off if clicking selected winner
         if (winner === id) {
-            setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
-            notifyChange(null, null, null);
+            setWinner(null); setMethod(null); setRound(null);
+            onPickChange?.(null);
         } else {
-            setWinner(id); setMethod(null); setRound(null); setShowDrawer(true);
-            // If survivor mode (winner only), notify immediately
-            if (mode === "winner") {
-                notifyChange(id, null, null);
-            } else {
-                notifyChange(id, null, null); // Notify winner change, clear rest
-            }
+            setWinner(id); setMethod(null); setRound(null);
+            onPickChange?.(mode === "winner" ? { winnerId: id } : { winnerId: id });
         }
-    };
-
-    const pickMethod = (m: Method) => {
-        if (isLocked) return;
-        const newMethod = method === m ? null : m;
-        const newRound = null;
-        setMethod(newMethod);
-        setRound(newRound);
-        notifyChange(winner, newMethod, newRound);
-    };
-
-    const pickRound = (r: number) => {
-        if (isLocked) return;
-        const newRound = round === r ? null : r;
-        setRound(newRound);
-        notifyChange(winner, method, newRound);
-    };
-
-    const reset = (e?: React.MouseEvent) => {
-        if (isLocked) return;
-        e?.stopPropagation();
-        setWinner(null); setMethod(null); setRound(null); setShowDrawer(true);
-        notifyChange(null, null, null);
     };
 
     const getShortSummary = () => {
@@ -451,88 +417,23 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                 </FighterPortrait>
             </div>
 
-            {/* ============================================================== */}
-            {/* BOTTOM DRAWER SELECTION (Only enable in "full" mode)          */}
-            {/* ============================================================== */}
-            {!isLocked && mode === "full" && winner && showDrawer && (
-                <div className="selection-area absolute bottom-0 inset-x-0 z-40 animate-in slide-in-from-bottom-8 duration-300">
-                    {/* Backdrop gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent pointer-events-none" />
-                    <div className="relative backdrop-blur-xl p-4 pt-6">
-                        {/* Handle */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-zinc-700" />
-
-                        {!isComplete ? (
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider text-center">
-                                    {!method ? "How does it end?" : `${METHODS.find(m => m.value === method)?.icon} ${method} — Which round?`}
-                                </p>
-                                {!method ? (
-                                    <div className="flex gap-2 justify-center">
-                                        {METHODS.map((m) => (
-                                            <button key={m.value} onClick={() => pickMethod(m.value)}
-                                                className="flex items-center gap-2 py-2.5 px-4 rounded-full bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
-                                                <span className="text-base">{m.icon}</span>
-                                                <span className="text-[11px] font-bold uppercase tracking-wide">{m.short}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : method !== "DECISION" ? (
-                                    <div className="flex gap-2 justify-center">
-                                        {Array.from({ length: fight.rounds }).map((_, i) => (
-                                            <button key={i} onClick={() => pickRound(i + 1)}
-                                                className="w-12 h-12 rounded-full text-sm font-black bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:border-white/20 hover:text-white transition-all active:scale-95 cursor-pointer backdrop-blur-sm">
-                                                R{i + 1}
-                                            </button>
-                                        ))}
-                                    </div>
-                                ) : null}
-                                <div className="flex justify-center gap-4 pt-1">
-                                    {method && (
-                                        <button onClick={() => setMethod(null)} className="text-[10px] text-zinc-500 hover:text-zinc-300 flex items-center gap-1 cursor-pointer">
-                                            <ChevronLeft className="h-3 w-3" /> Back
-                                        </button>
-                                    )}
-                                    <button onClick={(e) => reset(e)} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 cursor-pointer">
-                                        <RotateCcw className="h-3 w-3" /> Reset
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center gap-3 py-1">
-                                <div className="bg-green-500 rounded-full p-0.5"><Check className="h-3 w-3 text-black" /></div>
-                                <span className="text-sm font-black text-green-400 uppercase tracking-wider">{getShortSummary()}</span>
-                                <button onClick={(e) => reset(e)} className="text-[10px] text-zinc-600 hover:text-red-400 flex items-center gap-1 ml-2 cursor-pointer">
-                                    <RotateCcw className="h-3 w-3" /> Change
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
+            {/* ── Pick controls ─────────────────────────────────────────────── */}
+            {mode === "full" && (
+                <FightPickControls
+                    fight={fight}
+                    value={value}
+                    onPickChange={onPickChange ?? (() => {})}
+                    locked={isLocked}
+                    resultBreakdown={resultBreakdown}
+                />
             )}
         </div>
     );
 }
 
 // ============================================================================
-// Responsive wrapper — MobileFightCard on small screens, VegasFightCard on md+
+// Responsive wrapper — unified VegasFightCard for all screen sizes
 // ============================================================================
 export function ResponsiveFightCard(props: VegasFightCardProps) {
-    return (
-        <>
-            <div className="md:hidden">
-                <MobileFightCard
-                    fight={props.fight}
-                    mode={props.mode}
-                    value={props.value}
-                    onPickChange={props.onPickChange}
-                    locked={props.locked}
-                    lockAt={props.lockAt}
-                />
-            </div>
-            <div className="hidden md:block">
-                <VegasFightCard {...props} />
-            </div>
-        </>
-    );
+    return <VegasFightCard {...props} />;
 }

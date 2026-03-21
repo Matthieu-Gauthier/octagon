@@ -13,6 +13,7 @@ export interface ScrapedFighter {
   winsByKo: number;
   winsBySub: number;
   winsByDec: number;
+  age: number | null;
   height: string | null;
   weight: string | null;
   reach: string | null;
@@ -74,10 +75,12 @@ export class ScraperService {
       const eventsHtml = await this.fetchHtml(`${this.UFC_BASE_URL}/events`);
       const matches = eventsHtml.match(/href="\/event\/([^"]+)"/g) || [];
 
-      // Extract slugs and deduplicate them
+      // Extract slugs, strip URL fragments (#anchor), and deduplicate
       const slugs = [
         ...new Set(
-          matches.map((m) => m.replace('href="/event/', '').replace('"', '')),
+          matches.map((m) =>
+            m.replace('href="/event/', '').replace('"', '').split('#')[0],
+          ),
         ),
       ];
 
@@ -152,19 +155,36 @@ export class ScraperService {
       //   #main-card    → Main Card fights
       //   #prelims-card → Prelim fights
       //   #early-prelims-card → Early Prelims (skipped)
+      // Check if the page has section-based layout (#main-card / #prelims-card).
+      // Some future event pages don't have these sections yet and list all fights
+      // in a flat container — fall back to a global selector in that case.
+      const hasMainCard = $ev('#main-card .c-listing-fight').length > 0;
+      const hasPrelims  = $ev('#prelims-card .c-listing-fight').length > 0;
+      const useFlatFallback = !hasMainCard && !hasPrelims;
+
       const sections: {
         selector: string;
         isMainCard: boolean;
         isPrelim: boolean;
-      }[] = [
-        { selector: '#main-card', isMainCard: true, isPrelim: false },
-        { selector: '#prelims-card', isMainCard: false, isPrelim: true },
-      ];
+      }[] = useFlatFallback
+        ? [{ selector: '', isMainCard: true, isPrelim: false }]
+        : [
+            { selector: '#main-card', isMainCard: true, isPrelim: false },
+            { selector: '#prelims-card', isMainCard: false, isPrelim: true },
+          ];
+
+      if (useFlatFallback) {
+        this.logger.log(
+          `Event ${eventSlug}: no section layout found, using flat .c-listing-fight fallback`,
+        );
+      }
 
       let globalIndex = 0; // tracks overall fight order for isMainEvent / isCoMainEvent
 
       for (const section of sections) {
-        const fightElements = $ev(`${section.selector} .c-listing-fight`);
+        const fightElements = section.selector
+          ? $ev(`${section.selector} .c-listing-fight`)
+          : $ev('.c-listing-fight');
 
         for (let i = 0; i < fightElements.length; i++) {
           const el = fightElements[i];
@@ -186,9 +206,9 @@ export class ScraperService {
           const cornerNameEls = $f.find('.c-listing-fight__corner-name');
 
           let fASlug =
-            $ev(fighterLinks[0]).attr('href')?.split('/').pop() || '';
+            ($ev(fighterLinks[0]).attr('href')?.split('/').pop() || '').split('#')[0];
           let fBSlug =
-            $ev(fighterLinks[1]).attr('href')?.split('/').pop() || '';
+            ($ev(fighterLinks[1]).attr('href')?.split('/').pop() || '').split('#')[0];
 
           if (!fASlug && cornerNameEls.length >= 1) {
             fASlug = $ev(cornerNameEls[0])
@@ -302,6 +322,14 @@ export class ScraperService {
       });
       return result;
     };
+
+    // Age — scraped from .field--name-age .field__item (integer)
+    const ageRaw =
+      $('div.field--name-age .field__item').first().text().trim() ||
+      getBioStat('âge') ||
+      getBioStat('age') ||
+      null;
+    const age = ageRaw ? parseInt(ageRaw, 10) || null : null;
 
     // Bio stats — try new field selectors first, then label-based lookup
     const height =
@@ -475,6 +503,7 @@ export class ScraperService {
       winsByKo,
       winsBySub,
       winsByDec,
+      age,
       height: height || null,
       weight: weight || null,
       reach: reach || null,

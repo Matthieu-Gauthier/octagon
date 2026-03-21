@@ -1,0 +1,1 @@
+/home/xgotgot/code/octagon/.agent/workflows/speckit.plan.md

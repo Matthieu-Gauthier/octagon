@@ -130,6 +130,7 @@ export class EventsService {
           winsByKo: fighter.winsByKo,
           winsBySub: fighter.winsBySub,
           winsByDec: fighter.winsByDec,
+          age: fighter.age,
           height: fighter.height,
           weight: fighter.weight,
           reach: fighter.reach,

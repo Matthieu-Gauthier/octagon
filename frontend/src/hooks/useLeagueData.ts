@@ -3,6 +3,7 @@ import { useLeague, useLeagueStandings } from "@/hooks/useLeagues";
 import { useBets } from "@/hooks/useBets";
 import { useEvents } from "@/hooks/useEvents";
 import type { Bet, Fight, ScoringSettings } from "@/types/api";
+import type { PlayedAtout } from "@/hooks/useAtouts";
 
 export const DEFAULT_SCORING: ScoringSettings = { winner: 10, method: 5, round: 5, decision: 0 };
 
@@ -33,6 +34,92 @@ export function calcFightPoints(
     return { points, winnerCorrect, methodCorrect, roundCorrect };
 }
 
+/** Returns the effective bet for a user after applying INVERSION if present. */
+export function getEffectiveBet(
+    bet: Bet | undefined,
+    fight: Fight,
+    atouts: PlayedAtout[],
+    userId: string,
+): Bet | undefined {
+    if (!bet) return bet;
+    const inversion = atouts.find(
+        a => a.type === "INVERSION" && a.targetUserId === userId && a.fightId === fight.id,
+    );
+    if (!inversion) return bet;
+    const invertedWinnerId =
+        bet.winnerId === fight.fighterA.id ? fight.fighterB.id : fight.fighterA.id;
+    return { ...bet, winnerId: invertedWinnerId };
+}
+
+/** calcFightPoints with full atout effects (INVERSION, DETTE, DOUBLE). */
+export function calcFightPointsWithAtouts(
+    fight: Fight,
+    bet: Bet | undefined,
+    atouts: PlayedAtout[],
+    userId: string,
+    settings: ScoringSettings,
+    allBets?: Bet[],
+): { points: number; stolenPoints: number; winnerCorrect: boolean; methodCorrect: boolean; roundCorrect: boolean; atoutApplied?: PlayedAtout } {
+    // DETTE: target gets 0 — compute what they would have earned to show as "lost"
+    const dette = atouts.find(
+        a => a.type === "DETTE" && a.targetUserId === userId && a.fightId === fight.id,
+    );
+    if (dette) {
+        const effectiveBetForVictim = getEffectiveBet(bet, fight, atouts, userId);
+        const victimResult = calcFightPoints(fight, effectiveBetForVictim, settings);
+        const victimDouble = atouts.find(
+            a => a.type === "DOUBLE" && a.playedByUserId === userId && a.fightId === fight.id,
+        );
+        const lostPoints = victimDouble ? victimResult.points * 2 : victimResult.points;
+        return { ...victimResult, points: 0, stolenPoints: -lostPoints, atoutApplied: dette };
+    }
+
+    // Own bet points (with INVERSION applied)
+    const effectiveBet = getEffectiveBet(bet, fight, atouts, userId);
+    const inversion = atouts.find(
+        a => a.type === "INVERSION" && a.targetUserId === userId && a.fightId === fight.id,
+    );
+    const ownResult = calcFightPoints(fight, effectiveBet, settings);
+
+    // DOUBLE on own bet
+    const double = atouts.find(
+        a => a.type === "DOUBLE" && a.playedByUserId === userId && a.fightId === fight.id,
+    );
+    const ownPoints = double ? ownResult.points * 2 : ownResult.points;
+
+    // DETTE bonus: stolen points added on top of own points
+    let stolenPoints = 0;
+    let detteAtout: PlayedAtout | undefined;
+    const detteIPlayed = atouts.find(
+        a => a.type === "DETTE" && a.playedByUserId === userId && a.fightId === fight.id,
+    );
+    if (detteIPlayed?.targetUserId && allBets) {
+        const targetBet = allBets.find(b => b.userId === detteIPlayed.targetUserId && b.fightId === fight.id);
+        const effectiveTargetBet = getEffectiveBet(targetBet, fight, atouts, detteIPlayed.targetUserId);
+        const { points: baseStolen } = calcFightPoints(fight, effectiveTargetBet, settings);
+        const targetDouble = atouts.find(
+            a => a.type === "DOUBLE" && a.playedByUserId === detteIPlayed.targetUserId && a.fightId === fight.id,
+        );
+        stolenPoints = targetDouble ? baseStolen * 2 : baseStolen;
+        detteAtout = detteIPlayed;
+    }
+
+    const atoutApplied = detteAtout ?? double ?? inversion ?? undefined;
+    return { ...ownResult, points: ownPoints + stolenPoints, stolenPoints, atoutApplied };
+}
+
+/** How many points the DETTE player steals from their target on a fight. */
+export function calcDetteBonus(
+    fight: Fight,
+    targetBet: Bet | undefined,
+    atouts: PlayedAtout[],
+    targetUserId: string,
+    settings: ScoringSettings,
+): number {
+    const effectiveBet = getEffectiveBet(targetBet, fight, atouts, targetUserId);
+    return calcFightPoints(fight, effectiveBet, settings).points;
+}
+
 // ── Main composable ───────────────────────────────────────────────────────────
 
 export function useLeagueData(leagueId: string, eventId?: string) {
@@ -54,19 +141,10 @@ export function useLeagueData(leagueId: string, eventId?: string) {
     const fights: Fight[] = currentEvent?.fights ?? [];
     const finishedFights  = fights.filter(f => f.status === "FINISHED" && f.winnerId);
 
-    // Enrich standings with perfect picks, sort by points → perfect → correct
-    const standings = [...(rawStandings ?? [])].map(s => {
-        const userBets = (allBets ?? []).filter(b => b.leagueId === leagueId && b.userId === s.userId);
-        const perfect  = finishedFights.reduce((acc, fight) => {
-            const bet = userBets.find(b => b.fightId === fight.id);
-            if (!bet || bet.winnerId !== fight.winnerId || bet.method !== fight.method) return acc;
-            const isDecision = bet.method === "DECISION" || bet.method === "DRAW";
-            return (isDecision || bet.round === fight.round) ? acc + 1 : acc;
-        }, 0);
-        return { ...s, perfect };
-    }).sort((a, b) => {
+    // Backend already computes points with atout effects — just sort
+    const standings = [...(rawStandings ?? [])].sort((a, b) => {
         if (b.points  !== a.points)  return b.points  - a.points;
-        if (b.perfect !== a.perfect) return b.perfect - a.perfect;
+        if ((b.perfectPicks ?? 0) !== (a.perfectPicks ?? 0)) return (b.perfectPicks ?? 0) - (a.perfectPicks ?? 0);
         return b.correct - a.correct;
     });
 

@@ -1,9 +1,20 @@
 # Feature Specification: [FEATURE NAME]
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**Feature Branch**: `[###-feature-name]`
+**Created**: [DATE]
+**Status**: Draft
+
+## Context *(optional — include when background is needed to understand scope)*
+
+<!--
+  Use this section to explain WHY this feature exists and HOW the app works in
+  the relevant area. Remove entirely if the feature description is self-contained.
+  Examples: current flow being changed, game rules involved, user pain point.
+-->
+
+[Brief description of the relevant part of the app and what problem this feature solves]
+
+---
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -68,12 +79,14 @@
 ### Edge Cases
 
 <!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
+  List concrete situations that fall outside the happy path.
+  Think in terms of: empty states, concurrent actions, missing data, timing issues,
+  permission boundaries, and cascading effects on other features.
 -->
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+- **[Boundary]**: What happens when [specific boundary condition, e.g., "user places a bet after the fight starts"]?
+- **[Error]**: How does the system handle [specific error, e.g., "bet placed on a cancelled fight"]?
+- **[Conflict]**: What if [two actions conflict, e.g., "two players target the same opponent simultaneously"]?
 
 ## Requirements *(mandatory)*
 

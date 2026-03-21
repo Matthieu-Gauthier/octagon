@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["driverAdapters"]
 }
 
@@ -8,48 +8,62 @@ datasource db {
 }
 
 model User {
-  id        String   @id // Supabase UUID
-  email     String   @unique
-  username  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  leagues      LeagueMember[]
-  leaguesOwned League[]
-  bets         Bet[]
+  id            String         @id
+  email         String         @unique
+  username      String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  bets          Bet[]
+  leagues       LeagueMember[]
+  leaguesOwned  League[]
   survivorPicks SurvivorPick[]
 
   @@map("users")
 }
 
 model League {
-  id              String   @id @default(uuid())
+  id              String         @id @default(uuid())
   name            String
-  code            String   @unique // 6-char invite code
-  survivorEnabled Boolean  @default(false)
-  isArchived      Boolean  @default(false)
-  createdAt       DateTime @default(now())
+  code            String         @unique
+  survivorEnabled Boolean        @default(false)
+  isArchived      Boolean        @default(false)
+  createdAt       DateTime       @default(now())
   adminId         String
-  admin           User     @relation(fields: [adminId], references: [id])
-  
-  members         LeagueMember[]
+  scoringSettings Json           @default("{\"round\": 5, \"method\": 5, \"winner\": 10}")
   bets            Bet[]
+  members         LeagueMember[]
+  atouts          Atout[]
+  admin           User           @relation(fields: [adminId], references: [id])
   survivorPicks   SurvivorPick[]
-  
-  scoringSettings Json     @default("{\"winner\": 10, \"method\": 5, \"round\": 5}") 
 
   @@map("leagues")
 }
 
-model LeagueMember {
-  id        String   @id @default(uuid())
-  leagueId  String
-  userId    String
-  role      String   @default("MEMBER") // MEMBER, ADMIN
-  joinedAt  DateTime @default(now())
+model Atout {
+  id             String   @id @default(uuid())
+  leagueId       String
+  eventId        String
+  fightId        String
+  type           String
+  playedByUserId String
+  playedByName   String
+  targetUserId   String?
+  targetUserName String?
+  playedAt       DateTime @default(now())
+  league         League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
 
-  league    League   @relation(fields: [leagueId], references: [id])
-  user      User     @relation(fields: [userId], references: [id])
+  @@unique([leagueId, eventId, playedByUserId])
+  @@map("atouts")
+}
+
+model LeagueMember {
+  id       String   @id @default(uuid())
+  leagueId String
+  userId   String
+  role     String   @default("MEMBER")
+  joinedAt DateTime @default(now())
+  league   League   @relation(fields: [leagueId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
 
   @@unique([leagueId, userId])
   @@map("league_members")
@@ -60,71 +74,65 @@ model Event {
   name            String
   date            DateTime
   location        String
-  status          String            // SCHEDULED, LIVE, FINISHED
-  prelimsStartAt  DateTime?         // scraped from #prelims-card data-timestamp
-  mainCardStartAt DateTime?         // scraped from #main-card data-timestamp
-  eventImg        String?           // scraped from c-hero__image src
-  ufcstatsId      String?           // UFCStats hex ID e.g. "15ec018d144710db"
-
-  fights    Fight[]
+  status          String
+  mainCardStartAt DateTime?
+  prelimsStartAt  DateTime?
+  eventImg        String?
+  ufcstatsId      String?
+  fights          Fight[]
 
   @@map("events")
 }
 
-
 model Fighter {
-  id        String   @id // slug like 'jon-jones'
-  name      String
-  wins        Int?
-  losses      Int?
-  draws       Int?
-  noContests  Int?
-  winsByKo    Int?
-  winsBySub   Int?
-  winsByDec   Int?
-  height      String?
-  weight      String?
-  reach       String?
-  stance      String?
+  id                     String  @id
+  name                   String
+  wins                   Int?
+  losses                 Int?
+  draws                  Int?
+  noContests             Int?
+  winsByKo               Int?
+  winsBySub              Int?
+  winsByDec              Int?
+  height                 String?
+  weight                 String?
+  reach                  String?
+  stance                 String?
   sigStrikesLandedPerMin Float?
-  takedownAvg Float?
-  imagePath String?  // Local asset path
-  hometown  String?  // scraped from bio section for flag mapping
-  recentForm Json?   // Array of { result: 'W'|'L'|'D'|'NC', method: string }
-  ufcstatsId String? // UFCStats hex ID e.g. "150ff4cc642270b9"
-  
-  fightsA   Fight[]  @relation("FighterA")
-  fightsB   Fight[]  @relation("FighterB")
+  takedownAvg            Float?
+  imagePath              String?
+  hometown               String?
+  recentForm             Json?
+  ufcstatsId             String?
+  age                    Int?
+  fightsA                Fight[] @relation("FighterA")
+  fightsB                Fight[] @relation("FighterB")
 
   @@map("fighters")
 }
 
 model Fight {
-  id          String   @id // slug 'fb-main'
-  eventId     String
-  fighterAId  String
-  fighterBId  String
-  division    String
-  order       Int      @default(0)
-  rounds      Int
-  isMainEvent Boolean  @default(false)
-  isCoMainEvent Boolean @default(false)
-  isMainCard  Boolean  @default(true)
-  isPrelim    Boolean  @default(false)
-  status      String   @default("SCHEDULED") // SCHEDULED, LIVE, FINISHED
-  
-  // Result
-  winnerId    String?
-  method      String?  // KO/TKO, SUBMISSION, DECISION, DRAW, NC
-  round       Int?
-  time        String?
-  ufcstatsId  String?  // UFCStats fight hex ID e.g. "f030febede41c661"
-
-  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  fighterA    Fighter  @relation("FighterA", fields: [fighterAId], references: [id])
-  fighterB    Fighter  @relation("FighterB", fields: [fighterBId], references: [id])
-  
-  bets        Bet[]
+  id            String         @id
+  eventId       String
+  fighterAId    String
+  fighterBId    String
+  division      String
+  rounds        Int
+  isMainEvent   Boolean        @default(false)
+  isCoMainEvent Boolean        @default(false)
+  isMainCard    Boolean        @default(true)
+  isPrelim      Boolean        @default(false)
+  status        String         @default("SCHEDULED")
+  winnerId      String?
+  method        String?
+  round         Int?
+  time          String?
+  order         Int            @default(0)
+  ufcstatsId    String?
+  bets          Bet[]
+  event         Event          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  fighterA      Fighter        @relation("FighterA", fields: [fighterAId], references: [id])
+  fighterB      Fighter        @relation("FighterB", fields: [fighterBId], references: [id])
   survivorPicks SurvivorPick[]
 
   @@map("fights")
@@ -135,17 +143,14 @@ model Bet {
   leagueId  String
   userId    String
   fightId   String
-  
   winnerId  String
   method    String?
   round     Int?
-  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
+  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
   league    League   @relation(fields: [leagueId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, userId, fightId])
   @@map("bets")
@@ -156,16 +161,13 @@ model SurvivorPick {
   leagueId  String
   userId    String
   fightId   String
-  eventId   String // Denormalized for easy queries per event
-  
-  fighterId String // Who they picked to win
-  status    String @default("PENDING") // PENDING, WON, LOST, DRAW, NC
-  
+  eventId   String
+  fighterId String
+  status    String   @default("PENDING")
   createdAt DateTime @default(now())
-
+  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
   league    League   @relation(fields: [leagueId], references: [id])
   user      User     @relation(fields: [userId], references: [id])
-  fight     Fight    @relation(fields: [fightId], references: [id], onDelete: Cascade)
 
   @@unique([leagueId, userId, fightId])
   @@map("survivor_picks")
