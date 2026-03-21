@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
 import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fmtHeight, fmtReach, fmtWeight } from '@/lib/fighterStats';
 import { useEvents } from '@/hooks/useEvents';
 import { useBets, usePlaceBet, useRemoveBet } from '@/hooks/useBets';
 import { useLeague } from '@/hooks/useLeagues';
@@ -266,7 +267,7 @@ function FightCardItem({
         {/* Row 1 — Forme récente avec méthode */}
         <div className="flex items-center gap-1">
           {/* Fighter A: oldest → newest */}
-          <div className="flex gap-0.5">
+          <div className="flex gap-0.5 flex-1">
             {recentForm(fight.fighterA).map((r, i) => {
               const abbr = (r.result === 'W' || r.result === 'L') ? methodAbbr(r.method) : r.result;
               const cls = r.result === 'W'
@@ -285,11 +286,9 @@ function FightCardItem({
               );
             })}
           </div>
-          <div className="flex-1 flex justify-center">
-            <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">Form</span>
-          </div>
+          <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest w-10 text-center shrink-0">Form</span>
           {/* Fighter B: newest → oldest (most recent innermost) */}
-          <div className="flex gap-0.5 flex-row-reverse">
+          <div className="flex gap-0.5 flex-row-reverse flex-1 justify-start">
             {recentForm(fight.fighterB).map((r, i) => {
               const abbr = (r.result === 'W' || r.result === 'L') ? methodAbbr(r.method) : r.result;
               const cls = r.result === 'W'
@@ -325,9 +324,9 @@ function FightCardItem({
               b: <WinsByChips ko={koB} sub={subB} dec={decB} reverse />,
             },
             { label: 'Age',    a: fight.fighterA.age != null ? String(fight.fighterA.age) : undefined, b: fight.fighterB.age != null ? String(fight.fighterB.age) : undefined },
-            { label: 'Height', a: fight.fighterA.height, b: fight.fighterB.height },
-            { label: 'Reach',  a: fight.fighterA.reach,  b: fight.fighterB.reach  },
-            { label: 'Weight', a: fight.fighterA.weight, b: fight.fighterB.weight  },
+            { label: 'Height', a: fmtHeight(fight.fighterA.height), b: fmtHeight(fight.fighterB.height) },
+            { label: 'Reach',  a: fmtReach(fight.fighterA.reach),   b: fmtReach(fight.fighterB.reach)   },
+            { label: 'Weight', a: fmtWeight(fight.fighterA.weight), b: fmtWeight(fight.fighterB.weight) },
           ].map(({ label, a, b }) => {
             if (!a && !b) return null;
             return (

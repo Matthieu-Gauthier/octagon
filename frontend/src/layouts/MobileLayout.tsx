@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAtouts, ATOUT_DEFS } from '@/hooks/useAtouts';
 import { AtoutPlayModal } from '@/components/AtoutPlayModal';
 import { useLeagueData } from '@/hooks/useLeagueData';
+import { useGameRealtime } from '@/hooks/useGameRealtime';
 import type { Event } from '@/types/api';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -158,9 +159,13 @@ export function MobileLayout() {
        events?.find(e => e.status === 'SCHEDULED') ??
        events?.[events.length - 1]);
 
-  const { standings, fights, getUserName } = useLeagueData(leagueId, currentEvent?.id);
+  const { standings, fights, getUserName, league } = useLeagueData(leagueId, currentEvent?.id);
+  useGameRealtime(leagueId);
   const currentUserId = user?.id ?? '';
   const currentUserName = getUserName(currentUserId);
+  const currentUserRealName = league?.members?.find(m => m.userId === currentUserId)?.user?.username
+    ?? user?.email?.split('@')[0]
+    ?? currentUserName;
 
   const atoutsState = useAtouts(leagueId, currentEvent?.id);
   const myAtout = atoutsState.playedBy(currentUserId);
@@ -177,7 +182,7 @@ export function MobileLayout() {
     (allFights.find(f => f.id === a.fightId)?.status !== 'FINISHED')
   );
 
-  const initials = currentUserName.slice(0, 2).toUpperCase() || user?.email?.slice(0, 2).toUpperCase() || '?';
+  const initials = currentUserRealName.slice(0, 2).toUpperCase() || '?';
   const eventLabel = currentEvent ? formatEventName(currentEvent.name) : '—';
 
   const NAV = [

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { fmtHeight, fmtReach, fmtWeight } from "@/lib/fighterStats";
 import { Lock, Flame } from "lucide-react";
 import { FightPickControls } from "@/components/FightPickControls";
 import type { Fight, Fighter } from "@/types/api";
@@ -348,9 +349,9 @@ export function ShowcaseFightCard({
                         <p className="text-[8px] font-bold text-zinc-600 uppercase tracking-widest text-center pt-2.5 pb-0.5">Physical stats</p>
                         {([
                             { label: "Age",    a: fight.fighterA.age    != null ? String(fight.fighterA.age)    : null, b: fight.fighterB.age    != null ? String(fight.fighterB.age)    : null },
-                            { label: "Height", a: fight.fighterA.height ?? null, b: fight.fighterB.height ?? null },
-                            { label: "Reach",  a: fight.fighterA.reach  ?? null, b: fight.fighterB.reach  ?? null },
-                            { label: "Weight", a: fight.fighterA.weight ?? null, b: fight.fighterB.weight ?? null },
+                            { label: "Height", a: fmtHeight(fight.fighterA.height) ?? null, b: fmtHeight(fight.fighterB.height) ?? null },
+                            { label: "Reach",  a: fmtReach(fight.fighterA.reach)   ?? null, b: fmtReach(fight.fighterB.reach)   ?? null },
+                            { label: "Weight", a: fmtWeight(fight.fighterA.weight) ?? null, b: fmtWeight(fight.fighterB.weight) ?? null },
                         ] as { label: string; a: string | null; b: string | null }[]).map(({ label, a, b }) => {
                             if (a === null && b === null) return null;
                             return (
