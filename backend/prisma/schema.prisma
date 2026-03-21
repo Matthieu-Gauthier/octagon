@@ -106,6 +106,8 @@ model Fighter {
   ufcstatsId             String?
   age                    Int?
   nickname               String?
+  rankingPosition        Int?
+  isChampion             Boolean?
   fightsA                Fight[] @relation("FighterA")
   fightsB                Fight[] @relation("FighterB")
 

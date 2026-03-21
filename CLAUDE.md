@@ -130,3 +130,9 @@ This project uses **Spec-Kit**, a spec-driven feature development workflow. All 
 - **No global state for scores**: Leaderboards and picks are always scoped to a `leagueId`.
 - **Scoring defaults**: Winner = 10 pts, Method = +5 pts, Round = +5 pts (configurable per league via `scoringSettings` JSON).
 - **Survivor rules**: Wrong pick resets streak; draws and no-contests are safe.
+
+## Active Technologies
+- TypeScript (Node 20 backend, React 18 frontend) (012-scrape-fighter-nickname)
+
+## Recent Changes
+- 012-scrape-fighter-nickname: Added TypeScript (Node 20 backend, React 18 frontend)

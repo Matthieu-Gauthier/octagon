@@ -19,6 +19,7 @@ const mockMainEvent: Fight = {
     fighterA: {
         id: "jon-jones", name: "Jon Jones",
         nickname: "Bones",
+        isChampion: true,
         hometown: "Rochester, New York, United States",
         wins: 27, losses: 1, draws: 0, noContests: 0,
         winsByKo: 11, winsBySub: 6, winsByDec: 10,
@@ -58,6 +59,7 @@ const mockCoMain: Fight = {
     fighterA: {
         id: "dricus-du-plessis", name: "Dricus Du Plessis",
         nickname: "Stillknocks",
+        isChampion: true,
         hometown: "Pretoria, South Africa",
         wins: 22, losses: 2, draws: 0, noContests: 0,
         winsByKo: 8, winsBySub: 9, winsByDec: 5,
@@ -72,6 +74,7 @@ const mockCoMain: Fight = {
     fighterB: {
         id: "israel-adesanya", name: "Israel Adesanya",
         nickname: "The Last Stylebender",
+        rankingPosition: 3,
         hometown: "Auckland, New Zealand",
         wins: 24, losses: 3, draws: 0, noContests: 0,
         winsByKo: 10, winsBySub: 1, winsByDec: 13,

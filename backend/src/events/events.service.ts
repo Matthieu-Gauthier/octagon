@@ -139,6 +139,8 @@ export class EventsService {
           takedownAvg: fighter.takedownAvg,
           hometown: fighter.hometown ?? null,
           nickname: fighter.nickname ?? null,
+          rankingPosition: fighter.rankingPosition ?? null,
+          isChampion: fighter.isChampion ?? null,
           ...(fighter.imagePath ? { imagePath: fighter.imagePath } : {}),
           ...(fighter.recentForm ? { recentForm: fighter.recentForm } : {}),
         },

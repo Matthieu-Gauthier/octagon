@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { fmtHeight, fmtReach, fmtWeight } from "@/lib/fighterStats";
 import { FighterFlag } from "@/components/FighterFlag";
+import { RankBadge } from "@/components/RankBadge";
 import { Lock } from "lucide-react";
 import { FightPickControls } from "@/components/FightPickControls";
 import type { Fight, Fighter } from "@/types/api";
@@ -212,7 +213,7 @@ export function BrowserFightCard({
                     <div>
                         {/* Row 1: names + nicknames */}
                         <div className="flex justify-between">
-                            {/* Fighter A (left): flag · name · (nickname) */}
+                            {/* Fighter A (left): flag · name · (nickname) · (rank badge) */}
                             <div className="flex items-center gap-1.5">
                                 <FighterFlag hometown={fight.fighterA.hometown} />
                                 <p className={cn(
@@ -225,9 +226,11 @@ export function BrowserFightCard({
                                 {fight.fighterA.nickname && (
                                     <span className="text-[13px] italic uppercase text-zinc-400 leading-none font-semibold">"{fight.fighterA.nickname}"</span>
                                 )}
+                                <RankBadge fighter={fight.fighterA} />
                             </div>
-                            {/* Fighter B (right): (nickname) · name · flag */}
+                            {/* Fighter B (right): (rank badge) · (nickname) · name · flag */}
                             <div className="flex items-center gap-1.5">
+                                <RankBadge fighter={fight.fighterB} />
                                 {fight.fighterB.nickname && (
                                     <span className="text-[13px] italic uppercase text-zinc-400 leading-none font-semibold">"{fight.fighterB.nickname}"</span>
                                 )}

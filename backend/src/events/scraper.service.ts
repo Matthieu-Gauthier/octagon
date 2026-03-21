@@ -23,6 +23,8 @@ export interface ScrapedFighter {
   imagePath: string | null;
   hometown?: string;
   nickname?: string;
+  rankingPosition?: number;
+  isChampion?: boolean;
   recentForm?: {
     result: 'W' | 'L' | 'D' | 'NC';
     method: string;
@@ -301,6 +303,30 @@ export class ScraperService {
       ? rawNickname.replace(/^[\u201c\u201d"\s]+|[\u201c\u201d"\s]+$/g, '') || undefined
       : undefined;
 
+    // Ranking and champion status — from p.hero-profile__tag elements
+    const tagEls = $('p.hero-profile__tag').toArray();
+    let rankingPosition: number | undefined;
+    let isChampion: boolean | undefined;
+
+    for (const el of tagEls) {
+      const text = $(el).text().trim().replace(/\s+/g, ' ');
+      if (text.toLowerCase().includes('title holder')) {
+        isChampion = true;
+        break;
+      }
+    }
+
+    if (!isChampion) {
+      for (const el of tagEls) {
+        const text = $(el).text().trim().replace(/\s+/g, ' ');
+        const match = text.match(/^#(\d+)\s+(.+)$/);
+        if (match) {
+          rankingPosition = parseInt(match[1], 10);
+          break;
+        }
+      }
+    }
+
     const canonicalUrl = $('link[rel="canonical"]').attr('href');
     const canonicalSlug = canonicalUrl ? canonicalUrl.split('/').pop() : null;
 
@@ -519,6 +545,8 @@ export class ScraperService {
       imagePath: imageSrc ?? '',
       hometown: hometown || undefined,
       nickname,
+      rankingPosition,
+      isChampion,
       recentForm,
     };
   }

@@ -4,6 +4,7 @@ import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fmtHeight, fmtReach, fmtWeight } from '@/lib/fighterStats';
 import { FighterFlag } from '@/components/FighterFlag';
+import { RankBadge } from '@/components/RankBadge';
 import { useEvents } from '@/hooks/useEvents';
 import { useBets, usePlaceBet, useRemoveBet } from '@/hooks/useBets';
 import { useLeague } from '@/hooks/useLeagues';
@@ -244,6 +245,7 @@ function FightCardItem({
             {fight.fighterA.nickname && (
               <span className="text-[12px] italic uppercase text-zinc-400 leading-tight font-semibold">"{fight.fighterA.nickname}"</span>
             )}
+            <RankBadge fighter={fight.fighterA} />
           </div>
           <p className="text-[9px] text-zinc-600 font-bold mt-0.5">
             {fight.fighterA.wins ?? 0} - {fight.fighterA.losses ?? 0} - {fight.fighterA.draws ?? 0}
@@ -257,6 +259,7 @@ function FightCardItem({
         {/* Fighter B */}
         <div className={cn('flex-1 px-3 py-2.5 text-right transition-all', selectedB && 'bg-red-950/20')}>
           <div className="flex items-center justify-end gap-1.5">
+            <RankBadge fighter={fight.fighterB} />
             {fight.fighterB.nickname && (
               <span className="text-[12px] italic uppercase text-zinc-400 leading-tight font-semibold">"{fight.fighterB.nickname}"</span>
             )}

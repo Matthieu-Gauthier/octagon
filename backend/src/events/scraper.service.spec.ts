@@ -151,6 +151,80 @@ describe('ScraperService', () => {
     });
   });
 
+  describe('scrapeFighter - ranking and champion extraction', () => {
+    const buildFighterHtml = (tagsHtml: string) => `
+      <html><body>
+        <h1 class="hero-profile__name">Test Fighter</h1>
+        <p class="hero-profile__division-body">10-2-0 (W-L-D)</p>
+        ${tagsHtml}
+      </body></html>
+    `;
+
+    it('should extract rankingPosition from a standard rank tag', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">#13 Welterweight Division</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.rankingPosition).toBe(13);
+      expect(fighter.isChampion).toBeUndefined();
+    });
+
+    it('should set isChampion=true and no rankingPosition for a Title Holder tag', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">Title Holder</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.isChampion).toBe(true);
+      expect(fighter.rankingPosition).toBeUndefined();
+    });
+
+    it('should set isChampion=true for an Interim Title Holder tag', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">Interim Title Holder</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.isChampion).toBe(true);
+      expect(fighter.rankingPosition).toBeUndefined();
+    });
+
+    it('should return undefined for both fields when no ranking tag is present', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">Welterweight Division</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.rankingPosition).toBeUndefined();
+      expect(fighter.isChampion).toBeUndefined();
+    });
+
+    it('should set isChampion=true and no rankingPosition when both champion and rank tags exist', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml(`
+          <p class="hero-profile__tag">#1 Lightweight Division</p>
+          <p class="hero-profile__tag">Title Holder</p>
+        `),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.isChampion).toBe(true);
+      expect(fighter.rankingPosition).toBeUndefined();
+    });
+
+    it('should parse rankingPosition correctly when tag has extra whitespace/newlines', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">  \n  #5 Middleweight Division  \n  </p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.rankingPosition).toBe(5);
+    });
+
+    it('should handle high rank numbers and divisions with apostrophes', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__tag">#99 Women\'s Strawweight Division</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.rankingPosition).toBe(99);
+    });
+  });
+
   describe('scrapeFighter - nickname extraction', () => {
     const buildFighterHtml = (nicknameHtml: string) => `
       <html><body>

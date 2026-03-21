@@ -28,6 +28,8 @@ export interface Fighter {
     sigStrikesLandedPerMin?: number;
     takedownAvg?: number;
     nickname?: string;
+    rankingPosition?: number;
+    isChampion?: boolean;
     imagePath?: string;
     recentForm?: {
         result: 'W' | 'L' | 'D' | 'NC';
