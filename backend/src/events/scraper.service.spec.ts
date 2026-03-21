@@ -150,4 +150,54 @@ describe('ScraperService', () => {
       expect(fighter.recentForm[1].method).toBe('Decision');
     });
   });
+
+  describe('scrapeFighter - nickname extraction', () => {
+    const buildFighterHtml = (nicknameHtml: string) => `
+      <html><body>
+        <h1 class="hero-profile__name">Test Fighter</h1>
+        <p class="hero-profile__division-body">10-2-0 (W-L-D)</p>
+        ${nicknameHtml}
+      </body></html>
+    `;
+
+    it('should scrape and strip typographic double quotes from nickname', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__nickname">\u201cThe Machine\u201d</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.nickname).toBe('The Machine');
+    });
+
+    it('should scrape and strip ASCII double quotes from nickname', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__nickname">"The Notorious"</p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.nickname).toBe('The Notorious');
+    });
+
+    it('should return undefined when no nickname element is present', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml(''),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.nickname).toBeUndefined();
+    });
+
+    it('should return undefined when nickname element is empty', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__nickname"></p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.nickname).toBeUndefined();
+    });
+
+    it('should return undefined when nickname element contains only whitespace', async () => {
+      jest.spyOn(service as any, 'fetchHtml').mockResolvedValue(
+        buildFighterHtml('<p class="hero-profile__nickname">   </p>'),
+      );
+      const fighter = await (service as any).scrapeFighter('test-fighter');
+      expect(fighter.nickname).toBeUndefined();
+    });
+  });
 });

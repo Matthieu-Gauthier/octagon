@@ -105,6 +105,7 @@ model Fighter {
   recentForm             Json?
   ufcstatsId             String?
   age                    Int?
+  nickname               String?
   fightsA                Fight[] @relation("FighterA")
   fightsB                Fight[] @relation("FighterB")
 

@@ -138,6 +138,7 @@ export class EventsService {
           sigStrikesLandedPerMin: fighter.sigStrikesLandedPerMin,
           takedownAvg: fighter.takedownAvg,
           hometown: fighter.hometown ?? null,
+          nickname: fighter.nickname ?? null,
           ...(fighter.imagePath ? { imagePath: fighter.imagePath } : {}),
           ...(fighter.recentForm ? { recentForm: fighter.recentForm } : {}),
         },

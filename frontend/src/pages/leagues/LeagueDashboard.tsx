@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { FightCardPick } from "@/components/FightCard";
-import { ShowcaseFightCard } from "@/pages/FightCardShowcase";
+import { BrowserFightCard } from "@/components/BrowserFightCard";
 import { useEvents } from "@/hooks/useEvents";
 import { useBets, usePlaceBet, useRemoveBet } from "@/hooks/useBets";
 import { useAuth } from "@/context/AuthContext";
@@ -83,7 +83,7 @@ function LeagueFightCard({
   }
 
   return (
-    <ShowcaseFightCard
+    <BrowserFightCard
       fight={fight}
       value={value}
       locked={locked}

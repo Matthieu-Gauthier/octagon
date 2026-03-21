@@ -241,6 +241,9 @@ function FightCardItem({
             <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedA ? 'text-blue-300' : 'text-white')}>
               {fight.fighterA.name.split(' ').pop()}
             </p>
+            {fight.fighterA.nickname && (
+              <span className="text-[12px] italic uppercase text-zinc-400 leading-tight font-semibold">"{fight.fighterA.nickname}"</span>
+            )}
           </div>
           <p className="text-[9px] text-zinc-600 font-bold mt-0.5">
             {fight.fighterA.wins ?? 0} - {fight.fighterA.losses ?? 0} - {fight.fighterA.draws ?? 0}
@@ -254,6 +257,9 @@ function FightCardItem({
         {/* Fighter B */}
         <div className={cn('flex-1 px-3 py-2.5 text-right transition-all', selectedB && 'bg-red-950/20')}>
           <div className="flex items-center justify-end gap-1.5">
+            {fight.fighterB.nickname && (
+              <span className="text-[12px] italic uppercase text-zinc-400 leading-tight font-semibold">"{fight.fighterB.nickname}"</span>
+            )}
             <p className={cn('text-[15px] font-black uppercase tracking-tight leading-tight', selectedB ? 'text-red-300' : 'text-white')}>
               {fight.fighterB.name.split(' ').pop()}
             </p>

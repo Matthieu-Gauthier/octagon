@@ -22,6 +22,7 @@ export interface ScrapedFighter {
   takedownAvg: number | null;
   imagePath: string | null;
   hometown?: string;
+  nickname?: string;
   recentForm?: {
     result: 'W' | 'L' | 'D' | 'NC';
     method: string;
@@ -295,6 +296,11 @@ export class ScraperService {
       $('h1.c-hero__headline').text().trim() ||
       slug.replace(/-/g, ' ');
 
+    const rawNickname = $('p.hero-profile__nickname').text().trim();
+    const nickname = rawNickname
+      ? rawNickname.replace(/^[\u201c\u201d"\s]+|[\u201c\u201d"\s]+$/g, '') || undefined
+      : undefined;
+
     const canonicalUrl = $('link[rel="canonical"]').attr('href');
     const canonicalSlug = canonicalUrl ? canonicalUrl.split('/').pop() : null;
 
@@ -512,6 +518,7 @@ export class ScraperService {
       takedownAvg,
       imagePath: imageSrc ?? '',
       hometown: hometown || undefined,
+      nickname,
       recentForm,
     };
   }

@@ -367,6 +367,9 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                                     </span>
                                 ))}
                             </h3>
+                            {fight.fighterA.nickname && (
+                                <p className="text-[10px] italic uppercase text-zinc-400 tracking-wide mt-0.5">({fight.fighterA.nickname})</p>
+                            )}
                             <p className="text-sm font-bold text-red-500 mt-1 font-mono tracking-wider">{fight.fighterA.wins}-{fight.fighterA.losses}-{fight.fighterA.noContests}</p>
                             {winner === fight.fighterA.id && isComplete && !resultBreakdown && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-red-950/90 border border-red-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
@@ -405,6 +408,9 @@ export function VegasFightCard({ fight, mode = "full", value = null, onPickChang
                                     </span>
                                 ))}
                             </h3>
+                            {fight.fighterB.nickname && (
+                                <p className="text-[10px] italic uppercase text-zinc-400 tracking-wide mt-0.5 text-right">({fight.fighterB.nickname})</p>
+                            )}
                             <p className="text-sm font-bold text-blue-500 mt-1 font-mono tracking-wider">{fight.fighterB.wins}-{fight.fighterB.losses}-{fight.fighterB.noContests}</p>
                             {winner === fight.fighterB.id && isComplete && !resultBreakdown && (
                                 <div className="mt-1.5 inline-flex items-center gap-1 bg-blue-950/90 border border-blue-500/30 rounded-full pl-1.5 pr-2.5 py-0.5 backdrop-blur-md shadow-lg animate-in fade-in slide-in-from-bottom-2 pointer-events-auto cursor-default">
