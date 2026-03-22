@@ -44,7 +44,12 @@ export function AtoutPlayModal({
   const def = selectedType ? ATOUT_DEFS.find((d) => d.type === selectedType) : null;
   const alreadyTargeted = (uid: string) => atoutsState.some((a) => a.targetUserId === uid);
   const eligibleTargets = members.filter((m) => m.userId !== currentUserId && !alreadyTargeted(m.userId));
-  const eligibleFights = fights.filter((f) => f.isMainCard && f.status !== "FINISHED");
+  // fights are ordered main event first → first prelim last; fight played *before* index i is at i+1
+  const eligibleFights = fights.filter((f, i) => {
+    if (!f.isMainCard || f.status === "FINISHED") return false;
+    const prevFight = fights[i + 1];
+    return !prevFight || prevFight.status !== "FINISHED";
+  });
 
   const handleSelectType = (type: AtoutType) => {
     const d = ATOUT_DEFS.find((x) => x.type === type);

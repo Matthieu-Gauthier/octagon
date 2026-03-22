@@ -160,9 +160,9 @@ export function ExplorerFightRow({
             +{points}
           </p>
         )}
-        {resultFighter && (
+        {resultFighter && !winnerCorrect && (
           <p className="text-[9px] font-bold text-zinc-600 mt-0.5">
-            {resultFighter.name.split(' ').pop()}
+            → {resultFighter.name.split(' ').pop()}
             {fight.method && ` · ${methodLabel(fight.method)}`}
             {fight.round && fight.method !== 'DECISION' && ` R${fight.round}`}
           </p>

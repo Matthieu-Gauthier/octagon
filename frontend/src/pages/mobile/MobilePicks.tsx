@@ -545,7 +545,7 @@ export function MobilePicks({ eventId }: { eventId?: string }) {
       </div>
 
       {/* ── Navigation dots ────────────────────────────────────────────── */}
-      <div className="shrink-0 flex items-center justify-center gap-1.5 py-3">
+      <div className="shrink-0 flex items-center justify-center gap-1.5">
         {fights.map((fight, i) => {
           const picked = !!getPickForFight(fight);
           const finished = fight.status === 'FINISHED';

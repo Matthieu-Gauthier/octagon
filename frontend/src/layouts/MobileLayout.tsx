@@ -168,14 +168,14 @@ export function MobileLayout() {
     ?? currentUserName;
 
   const atoutsState = useAtouts(leagueId, currentEvent?.id);
+  const allFights = currentEvent?.fights ?? fights;
   const myAtout = atoutsState.playedBy(currentUserId);
   const hasAtout = !myAtout;
-  const myAtoutFightFinished = myAtout
-    ? (currentEvent?.fights ?? fights).find(f => f.id === myAtout.fightId)?.status === 'FINISHED'
-    : false;
-  const canChangeAtout = !!myAtout && !myAtoutFightFinished;
-
-  const allFights = currentEvent?.fights ?? fights;
+  const myAtoutFightIndex = myAtout ? allFights.findIndex(f => f.id === myAtout.fightId) : -1;
+  // fights are ordered main event first → first prelim last; the fight played *before* index N is at N+1
+  const prevFight = myAtoutFightIndex >= 0 ? allFights[myAtoutFightIndex + 1] : null;
+  const atoutIsLocked = !!myAtout && !!prevFight && prevFight.status === 'FINISHED';
+  const canChangeAtout = !!myAtout && !atoutIsLocked;
   // Generic "you're targeted" indicator — no type or fight revealed
   const isTargeted = atoutsState.atouts.some(
     a => a.targetUserId === currentUserId &&

@@ -10,6 +10,12 @@ interface OutletCtx {
   currentUserId: string;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts[0]?.[0]?.toUpperCase() ?? '?';
+}
+
 const MEDAL_BG = ['bg-yellow-500/10 border-yellow-600/30', 'bg-zinc-400/10 border-zinc-600/30', 'bg-orange-900/20 border-orange-800/30'];
 const MEDAL_TEXT = ['text-yellow-400', 'text-zinc-400', 'text-orange-600'];
 const MEDAL_ICON = ['🥇', '🥈', '🥉'];
@@ -68,7 +74,7 @@ export function MobileStandings() {
               const rank = standings.indexOf(entry);
               const isMe = entry.userId === currentUserId;
               const name = getUserName(entry.userId);
-              const initials = name.slice(0, 2).toUpperCase();
+              const initials = getInitials(name);
               const myAtout = atoutsState?.playedBy(entry.userId);
               const myAtoutDef = myAtout ? ATOUT_DEFS.find(d => d.type === myAtout.type) : null;
               const targetedAtout = atoutsState?.targetedBy(entry.userId)[0];
@@ -173,7 +179,7 @@ export function MobileStandings() {
                       isMe ? 'border-zinc-600 bg-zinc-700 text-white' : 'border-zinc-800 bg-zinc-900 text-zinc-400'
                     )}
                   >
-                    {name.slice(0, 2).toUpperCase()}
+                    {getInitials(name)}
                   </div>
 
                   {/* Name + bar */}

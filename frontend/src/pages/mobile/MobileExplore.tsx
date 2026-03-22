@@ -14,6 +14,12 @@ interface OutletCtx {
   currentUserId: string;
 }
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return parts[0]?.[0]?.toUpperCase() ?? '?';
+}
+
 export function MobileExplore() {
   const { leagueId = '' } = useParams();
   const ctx = useOutletContext<OutletCtx>();
@@ -107,7 +113,7 @@ export function MobileExplore() {
               'w-10 h-10 rounded-full border-2 flex items-center justify-center text-[12px] font-black uppercase',
               selectedIsMe ? 'border-red-500 bg-red-950/30 text-red-300' : 'border-zinc-700 bg-zinc-800 text-zinc-300'
             )}>
-              {getUserName(selectedUserId).slice(0, 2).toUpperCase()}
+              {getInitials(getUserName(selectedUserId))}
             </div>
 
             {/* Name + stats */}
